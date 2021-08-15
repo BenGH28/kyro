@@ -66,6 +66,7 @@ we don't already have it in on the computer and we download it if necessary.
 
 # Todo
 - [ ] Make English work first
+	- [ ]  Get the config file setup
 	- [ ] Get a Bible from gratis-bible
 		- [ ] store it in `$XDG_DATA_HOME`
 	- [ ] parse the Bible xml
