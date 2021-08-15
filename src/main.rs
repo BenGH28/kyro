@@ -1,4 +1,6 @@
-use serde::{Deserialize, Serialize};
+mod config;
+
+use config::Config;
 use std::process::Command;
 
 fn download_bible(language: &str, version: &str) {
@@ -14,23 +16,8 @@ fn download_bible(language: &str, version: &str) {
 		.expect("curl failed to start");
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-struct MyConfig {
-	language: String,
-	version: String,
-}
-
-impl Default for MyConfig {
-	fn default() -> Self {
-		MyConfig {
-			language: "english".to_string(),
-			version: "asv".to_string(),
-		}
-	}
-}
-
 fn main() -> Result<(), confy::ConfyError> {
-	let cfg: MyConfig = confy::load("kyro")?;
+	let cfg: Config = confy::load("kyro")?;
 	dbg!(cfg);
 	Ok(())
 }
