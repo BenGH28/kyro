@@ -9,10 +9,10 @@ There will be a config file where we can set this `$XDG_CONFIG_HOME/.config/kyro
 ```toml
 #this should be the default config
 [Language]
-english
+user = "english"
 
 [Bible]
-asv
+version = "asv"
 ```
 
 Kyro will read the config file and get the appropriate bible xml file from [gratis-bible](https://github.com/gratis-bible/bible).
