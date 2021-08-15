@@ -38,18 +38,18 @@ kyro --help
 
 - List available Bibles
 ```sh
-kyro --list
+kyro --list-bibles
 ```
 
-- Read a passage of scripture
+- Read/search a passage of scripture
 ```sh
-kyro John 3:16
+kyro read John 3:16
 
 # start from the beginning of the book
-kyro John
+kyro read John
 
-# read a range of verses
-kyro John 3:16-18
+# search for a range of verses
+kyro search John 3:16-18
 ```
 
 - Verse of the day
