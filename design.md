@@ -30,30 +30,30 @@ Kyro will download the bible and place it somewhere on your computer probably `$
 # CommandLine
 
 The help list
-```sh
+```
 kyro -h
 	Usage: kyro <options> [command] [args]
 
 
 	Options:
-		-h --help 							print this help message
+		-h --help 				print this help message
 		-b --bible=[bible version]  		set your prefered Bible version
-		-l --lang=[LANGUAGE]    			set your prefered language
-		-ll --language-list 				list all the languages supported
-		-bl --bible-list 					list all the Bibles for your selected language
+		-l --lang=[LANGUAGE]    		set your prefered language
+		-ll --language-list 			list all the languages supported
+		-bl --bible-list 			list all the Bibles for your selected language
 
 	Commands:
-		read [args]  						read a portion of the Bible in a buffer
-		search [args] 						search for section of the Bible and print
-											it to the terminal
-		today 								Get a verse of the day printed to the screen
+		read [args]  				read a portion of the Bible in a buffer
+		search [args] 				search for section of the Bible and print
+							it to the terminal
+		today 					Get a verse of the day printed to the screen
 
 
 	Args:
-		<Book>  							Start this book from 1:1
-		<Book> <Chapter> 					Start this book at this chapter from
-											verse 1 in a buffer
-		<Book> <Chapter>:<Verse>  			Start this book from the chapter and verse
+		<Book>  				Start this book from 1:1
+		<Book> <Chapter> 			Start this book at this chapter from
+							verse 1 in a buffer
+		<Book> <Chapter>:<Verse>  		Start this book from the chapter and verse
 		<Book> <Chapter>:<Verse>-<Verse>  	Get this section of the book
 ```
 
