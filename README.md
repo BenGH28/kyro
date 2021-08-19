@@ -1,17 +1,6 @@
-<div style="text-align:center">
-	<img src=https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Simple_Labarum2.svg/1920px-Simple_Labarum2.svg.png
-		alt="Chi Rho" width="200" />
-</div>
+# ☧  kyro - the Bible on the command line
 
-<div style="text-align:center">
-	<h1>Kyro</>
-	<h5>
-		<p>Read the Bible from the commandline</>
-	</>
-</div>
-
-
-# Potential Bible Sources
+## Potential Bible Sources
 
 - API's
 	* [API.Bible](https://scripture.api.bible/)
@@ -25,12 +14,12 @@
 		* can store things locally
 
 
-# Selected Bible Sources
+## Selected Bible Sources
 - **Gratis Bible**
 	- offers much ease for me
 	- I can use it as a submodule in the project and reference that maybe
 
-# Commands
+## Commands
 - Help
 ```
 kyro --help
@@ -38,18 +27,18 @@ kyro --help
 
 - List available Bibles
 ```sh
-kyro --list
+kyro --list-bibles
 ```
 
-- Read a passage of scripture
+- Read/search a passage of scripture
 ```sh
-kyro John 3:16
+kyro read John 3:16
 
 # start from the beginning of the book
-kyro John
+kyro read John
 
-# read a range of verses
-kyro John 3:16-18
+# search for a range of verses
+kyro search John 3:16-18
 ```
 
 - Verse of the day
