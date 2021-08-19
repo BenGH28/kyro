@@ -1,23 +1,37 @@
 mod config;
 
 use config::Config;
-use std::process::Command;
 
-fn download_bible(language: &str, version: &str) {
+fn get_bible_url(language: String, version: String) -> String {
 	let url: String = format!(
 		r#"https://raw.githubusercontent.com/gratis-bible/bible/master/{}/{}.xml"#,
 		language, version
 	);
-
-	Command::new("curl")
-		.arg("-O")
-		.arg(url)
-		.output()
-		.expect("curl failed to start");
+	url
 }
 
-fn main() -> Result<(), confy::ConfyError> {
-	let cfg: Config = confy::load("kyro")?;
-	dbg!(cfg);
+fn download_bible(url: String) -> Result<String, reqwest::Error> {
+	let bible = reqwest::blocking::get(url)?.text();
+	match bible {
+		Ok(text) => return Ok(text),
+		Err(e) => return Err(e),
+	}
+}
+
+fn main() -> Result<(), reqwest::Error> {
+	if let Ok(conf) = Config::get_config() {
+		if let Some(lang_code) = Config::get_language_code(conf.language) {
+			let url = get_bible_url(lang_code, conf.version);
+
+			println!("{:?}", url);
+
+			let bible = download_bible(url);
+			match bible {
+				Ok(text) => println!("{:?}", text),
+				Err(e) => println!("{:?}", e),
+			}
+		}
+	}
+
 	Ok(())
 }

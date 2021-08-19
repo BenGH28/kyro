@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
-	language: String,
-	version: String,
+	pub language: String,
+	pub version: String,
 }
 
 impl Default for Config {
@@ -19,6 +20,21 @@ impl Config {
 	pub fn get_config() -> Result<Config, confy::ConfyError> {
 		let conf: Config = confy::load("kyro")?;
 		Ok(conf)
+	}
+
+	pub fn get_language_dict() -> HashMap<String, String> {
+		let mut language_dict: HashMap<String, String> = HashMap::new();
+		language_dict.insert("english".to_string(), "en".to_string());
+		language_dict
+	}
+
+	pub fn get_language_code(config_lang: String) -> Option<String> {
+		let language_dict: HashMap<String, String> = Config::get_language_dict();
+		let code = language_dict.get(&config_lang);
+		match code {
+			Some(c) => Some(c.to_owned()),
+			None => None,
+		}
 	}
 }
 
