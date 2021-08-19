@@ -22,9 +22,6 @@ fn main() -> Result<(), reqwest::Error> {
 	if let Ok(conf) = Config::get_config() {
 		if let Some(lang_code) = Config::get_language_code(conf.language) {
 			let url = get_bible_url(lang_code, conf.version);
-
-			println!("{:?}", url);
-
 			let bible = download_bible(url);
 			match bible {
 				Ok(text) => println!("{:?}", text),
