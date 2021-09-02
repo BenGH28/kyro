@@ -28,13 +28,15 @@ impl Config {
 		language_dict
 	}
 
-	pub fn get_language_code(config_lang: String) -> Option<String> {
+	pub fn get_language_code(&self) -> Option<String> {
+		let key = self.language.to_owned();
 		let language_dict: HashMap<String, String> = Config::get_language_dict();
-		let code = language_dict.get(&config_lang);
-		match code {
-			Some(c) => Some(c.to_owned()),
-			None => None,
-		}
+		let code = language_dict.get(&key);
+		code.map(|c| c.to_owned())
+	}
+
+	pub fn get_file_name(&self) -> String {
+		self.version.to_owned() + ".xml"
 	}
 }
 
@@ -43,13 +45,20 @@ mod tests {
 	use super::Config;
 	#[test]
 	fn test_get_config() {
-		let conf: Config;
-		if let Ok(i) = Config::get_config() {
-			conf = i;
-			assert_eq!(conf.language, "english".to_string());
-			assert_eq!(conf.version, "asv".to_string());
-		} else {
-			panic!("config wasn't correct");
-		}
+		let conf = Config::default();
+		assert_eq!(conf.language, "english".to_owned());
+		assert_eq!(conf.version, "asv".to_owned());
+	}
+
+	#[test]
+	fn test_get_language_code() {
+		let config = Config::default();
+		let code = config.get_language_code();
+		let code = match code {
+			Some(code) => code,
+			None => "".to_string(),
+		};
+
+		assert_eq!(code, "en".to_string());
 	}
 }
