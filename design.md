@@ -1,5 +1,6 @@
 # Configuration
-I want the user to be able to  configure the app.  What shall we configure?
+
+I want the user to be able to configure the app. What shall we configure?
 
 1. Bible
 2. Language
@@ -8,15 +9,13 @@ There will be a config file where we can set this `$XDG_CONFIG_HOME/.config/kyro
 
 ```toml
 #this should be the default config
-[Language]
-user = "english"
-
-[Bible]
-version = "asv"
+language = 'english'
+version = 'asv'
 ```
 
 Kyro will read the config file and get the appropriate bible xml file from [gratis-bible](https://github.com/gratis-bible/bible).
 If the user wants to try another language or Bible version they can do so from the command line.
+
 ```sh
 # use french and use the Ostervald Bible
 $ kyro --lang=french --bible=ost jean 3:16
@@ -26,10 +25,10 @@ Languages might be tricky because I only understand English but I think I can ha
 Kyro will download the bible and place it somewhere on your computer probably `$XDG_DATA_HOME` which is likely
 `$HOME/.local/share`
 
-
 # CommandLine
 
 The help list
+
 ```
 kyro -h
 	Usage: kyro <options> [command] [args]
@@ -57,22 +56,19 @@ kyro -h
 		<Book> <Chapter>:<Verse>-<Verse>  	Get this section of the book
 ```
 
+# The Bible
 
-#  The Bible
 We will store the specified Bible locally on the user's computer under the preferred language.
 If the user specifies a different language on the commandline or changes the config then we check that
 we don't already have it in on the computer and we download it if necessary.
 
-
 # Todo
-- [ ] Make English work first
-	- [ ]  Get the config file setup
-	- [ ] Get a Bible from gratis-bible
-		- [ ] store it in `$XDG_DATA_HOME`
-	- [ ] parse the Bible xml
-	- [ ] print the Bible to the terminal
-	- [ ] show the Bible in a buffer like `man` or `more` (make the buffer uneditable).
 
-
-
-
+-   [ ] Make English work first
+    -   [x] Get the config file setup
+    -   [x] Get a Bible from gratis-bible
+        -   [x] store it in `$XDG_DATA_HOME`
+    -   [x] use `anyhow` for better error handling
+    -   [ ] parse the Bible xml
+    -   [ ] print the Bible to the terminal
+    -   [ ] show the Bible in a buffer like `man` or `less` (make the buffer uneditable).
