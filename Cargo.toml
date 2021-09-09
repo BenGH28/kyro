@@ -2,7 +2,7 @@
 name = "kyro"
 version = "0.1.0"
 edition = "2018"
-authors = "Ben Hunt"
+authors = ["Ben Hunt <bnjmnhnt.git@gmail.com>"]
 description = "Read the Bible on the command line"
 repository = "https://github.com/BenGH28/kyro"
 keywords = ["Bible", "Christianity", "Gospel"]
@@ -17,3 +17,4 @@ reqwest = {version = "0.11", features = ["blocking"]}
 directories-next = "2.0.0"
 anyhow = "1.0.43"
 roxmltree = "0.14.1"
+structopt = "0.3.23"
