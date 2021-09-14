@@ -1,17 +1,14 @@
-use kyro::*;
+use kyro::{download_bible, Config};
 mod cli;
+use anyhow::Context as _;
 use cli::Command;
 use structopt::StructOpt;
 
 fn main() -> anyhow::Result<()> {
     //read the config
     let config = Config::get_config()?;
-    if let Some(lang_code) = config.get_language_code() {
-        download_bible(&lang_code, &config)?;
-
-        let args = Command::from_args();
-        args.run()
-        //the config is good so we now have to work with the cli
-    }
+    let lang_code = config.get_language_code().context("Unknown language")?;
+    download_bible(&lang_code, &config)?;
+    Command::from_args().run();
     Ok(())
 }
