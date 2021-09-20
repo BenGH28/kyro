@@ -1,8 +1,11 @@
 mod config;
 
-use anyhow::Context;
+use std::fs;
+
+use anyhow::Context as _;
 pub use config::Config;
 use directories_next::ProjectDirs;
+use std::ffi::OsString;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -36,9 +39,10 @@ pub fn download_bible(lang_code: &str, config: &Config) -> anyhow::Result<()> {
 pub fn save_to_pc(url: &str, config: &Config) -> anyhow::Result<()> {
     //get data_dir: $HOME/.local/share/kyro/
     let data_dir: PathBuf = get_data_dir().context("couldn't determine data dir path")?;
-    let file_path: PathBuf = data_dir.join(&config.language).join(config.get_file_name());
     //get the path to the language sub directory (ie. $HOME/.local/share/kyro/english/)
     let language_dir: PathBuf = data_dir.join(&config.language);
+    //the full path to the file (ie. $HOME/.local/share/kyro/english/asv.xml)
+    let file_path: PathBuf = language_dir.join(config.get_file_name());
     //if the directory doesn't exist then lets create it
     if !language_dir.is_dir() {
         std::fs::create_dir_all(language_dir)
@@ -54,6 +58,49 @@ pub fn save_to_pc(url: &str, config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
+fn read_bible_from_file(path: &str) -> anyhow::Result<String> {
+    let contents = fs::read_to_string(path)?;
+    Ok(contents)
+}
+
+///parse the xml bible into a Document
+fn parse(bible_string: &str) -> anyhow::Result<roxmltree::Document> {
+    let bible = roxmltree::Document::parse(bible_string)?;
+    Ok(bible)
+}
+
+///print the passage of scripture to the terminal
+pub fn print_passage(config: &Config, book: &str, chapter_verse: &str) -> anyhow::Result<()> {
+    let chapter = chapter_verse.split(':');
+    let os_file_path: OsString = get_path_to_bible_file(config)?;
+    let file_path = os_file_path.into_string().unwrap();
+    let bible_string = read_bible_from_file(&file_path)?;
+    let doc = parse(&bible_string)?;
+    let elem: roxmltree::Node = doc
+        .descendants()
+        .find(|n| n.attribute("osisID") == Some("Gen.1.1"))
+        .unwrap();
+    Ok(())
+}
+
+pub fn read_passage(book: &str, chapter_verse: &str) -> anyhow::Result<()> {
+    Ok(())
+}
+
+pub fn today() -> anyhow::Result<()> {
+    Ok(())
+}
+
+///get the absolute path to the bible xml file
+pub fn get_path_to_bible_file(config: &Config) -> anyhow::Result<OsString> {
+    let data_dir: PathBuf = get_data_dir().context("couldn't determine data dir path")?;
+    let file_path: OsString = data_dir
+        .join(&config.language)
+        .join(config.get_file_name())
+        .into_os_string();
+    Ok(file_path)
+}
+
 ///Get the text from the gratis-bible github account
 pub fn get_bible_text(url: &str) -> anyhow::Result<String> {
     let bible: String = reqwest::blocking::get(url)?.text()?;
@@ -64,6 +111,27 @@ pub fn get_bible_text(url: &str) -> anyhow::Result<String> {
 mod tests {
     use super::*;
 
+    #[test]
+    fn test_parse() {
+        let doc = parse(
+            r#"
+        <verse osisID='Gen.1.1'>In the beginning God created the heavens and the earth.</verse>
+              "#,
+        )
+        .unwrap();
+
+        let elem: roxmltree::Node = doc
+            .descendants()
+            .find(|n| n.attribute("osisID") == Some("Gen.1.1"))
+            .unwrap();
+        assert!(elem.has_tag_name("verse"));
+
+        let text = doc.root_element().first_child().unwrap().text().unwrap();
+        assert_eq!(
+            text,
+            "In the beginning God created the heavens and the earth."
+        );
+    }
     #[test]
     fn test_get_bible_text() {
         let config = Config::default();
