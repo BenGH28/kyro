@@ -1,4 +1,4 @@
-use kyro::{print_passage, read_passage, today};
+use kyro::{print_passage, read_passage, today, Config};
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -13,12 +13,12 @@ pub enum Command {
 }
 
 impl Command {
-    pub fn run(&self) -> anyhow::Result<()> {
+    pub fn run(&self, config: &Config) -> anyhow::Result<()> {
         match self {
             Command::Search {
                 book,
                 chapter_verse,
-            } => print_passage(book, chapter_verse),
+            } => print_passage(&config, book, chapter_verse),
             Command::Read {
                 book,
                 chapter_verse,

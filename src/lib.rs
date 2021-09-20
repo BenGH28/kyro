@@ -1,3 +1,4 @@
+#![allow(unused_variables)]
 mod config;
 
 use std::fs;
@@ -71,15 +72,34 @@ fn parse(bible_string: &str) -> anyhow::Result<roxmltree::Document> {
 
 ///print the passage of scripture to the terminal
 pub fn print_passage(config: &Config, book: &str, chapter_verse: &str) -> anyhow::Result<()> {
-    let chapter = chapter_verse.split(':');
-    let os_file_path: OsString = get_path_to_bible_file(config)?;
-    let file_path = os_file_path.into_string().unwrap();
+    //separate the chapter from the verse(s)
+    let chpt_vs_split: Vec<&str> = chapter_verse.split(':').collect();
+
+    let chapter: &str = chpt_vs_split[0];
+    //could be a range of verses in here delimited by '-' ie. '16-17'
+    let verses: &str = chpt_vs_split[1];
+    let xml_format_ch_vs: String;
+    if verses.contains('-') {
+        //now we have ['16', '17']
+        let range: Vec<&str> = verses.split('-').collect();
+        let begin = range[0];
+        let end = range[1];
+        xml_format_ch_vs = format!("{}.{}.{}", book, chapter, begin);
+    } else {
+        xml_format_ch_vs = format!("{}.{}.{}", book, chapter, verses);
+    }
+
+    let file_path = get_path_to_bible_file(config)?.into_string().unwrap();
     let bible_string = read_bible_from_file(&file_path)?;
-    let doc = parse(&bible_string)?;
-    let elem: roxmltree::Node = doc
+    //the entire bible is at my disposal now
+    let parsed_bible = parse(&bible_string)?;
+    //this only gets a single verse
+    let xml_vs: roxmltree::Node = parsed_bible
         .descendants()
-        .find(|n| n.attribute("osisID") == Some("Gen.1.1"))
+        .find(|n| n.attribute("osisID") == Some(&xml_format_ch_vs))
         .unwrap();
+    let text = xml_vs.first_child().unwrap().text().unwrap();
+    println!("{}", text);
     Ok(())
 }
 
@@ -139,5 +159,10 @@ mod tests {
         let url: String = get_bible_url(&code, &config.version);
         let text: String = get_bible_text(&url).unwrap();
         assert_ne!("", text);
+    }
+    #[test]
+    fn test_print_passage() {
+        print_passage(&Config::default(), "Gen", "1:2").unwrap();
+        let expected = "And the earth was waste and void; and darkness was upon the face of the deep: and the Spirit of God moved upon the face of the waters";
     }
 }

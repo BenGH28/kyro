@@ -9,6 +9,6 @@ fn main() -> anyhow::Result<()> {
     let config = Config::get_config()?;
     let lang_code = config.get_language_code().context("Unknown language")?;
     download_bible(&lang_code, &config)?;
-    Command::from_args().run();
+    Command::from_args().run(&config)?;
     Ok(())
 }
