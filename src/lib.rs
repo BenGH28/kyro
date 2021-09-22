@@ -1,4 +1,5 @@
 #![allow(unused_variables)]
+#![allow(dead_code)]
 mod config;
 
 use std::fs;
@@ -70,45 +71,96 @@ fn parse(bible_string: &str) -> anyhow::Result<roxmltree::Document> {
     Ok(bible)
 }
 
-///print the passage of scripture to the terminal
-pub fn print_passage(config: &Config, book: &str, chapter_verse: &str) -> anyhow::Result<()> {
-    //separate the chapter from the verse(s)
-    let chpt_vs_split: Vec<&str> = chapter_verse.split(':').collect();
-
-    let chapter: &str = chpt_vs_split[0];
-    //could be a range of verses in here delimited by '-' ie. '16-17'
-    let verses: &str = chpt_vs_split[1];
-    let xml_format_ch_vs: String;
-    if verses.contains('-') {
-        //now we have ['16', '17']
-        let range: Vec<&str> = verses.split('-').collect();
-        let begin = range[0];
-        let end = range[1];
-        xml_format_ch_vs = format!("{}.{}.{}", book, chapter, begin);
-    } else {
-        xml_format_ch_vs = format!("{}.{}.{}", book, chapter, verses);
-    }
-
-    let file_path = get_path_to_bible_file(config)?.into_string().unwrap();
-    let bible_string = read_bible_from_file(&file_path)?;
-    //the entire bible is at my disposal now
-    let parsed_bible = parse(&bible_string)?;
+fn get_verse_from_xml(
+    parsed_bible: &roxmltree::Document,
+    search_string: &str,
+) -> anyhow::Result<String> {
     //this only gets a single verse
     let xml_vs: roxmltree::Node = parsed_bible
         .descendants()
-        .find(|n| n.attribute("osisID") == Some(&xml_format_ch_vs))
-        .unwrap();
-    let text = xml_vs.first_child().unwrap().text().unwrap();
+        .find(|n| n.attribute("osisID") == Some(search_string))
+        .context("could not find selected passage")?;
+    let text = xml_vs.first_child().unwrap().text().unwrap().to_owned();
+    Ok(text)
+}
+fn get_single_verse(
+    config: &Config,
+    book: &str,
+    chapter: &str,
+    verse: &str,
+) -> anyhow::Result<String> {
+    let xml_format_ch_vs: String = format!("{}.{}.{}", book, chapter, verse);
+
+    let file_path = get_path_to_bible_file(config)?.into_string().unwrap();
+
+    let bible_string = read_bible_from_file(&file_path)?;
+
+    //the entire bible is at my disposal now
+    let parsed_bible = parse(&bible_string)?;
+    let text = get_verse_from_xml(&parsed_bible, &xml_format_ch_vs)?;
+    Ok(text)
+}
+
+fn get_range_verse(
+    config: &Config,
+    book: &str,
+    chapter: &str,
+    verses: &str,
+) -> anyhow::Result<String> {
+    let mut passage: String = "".to_string();
+    let range: Vec<&str> = verses.split('-').collect();
+
+    let begin: i32 = range[0]
+        .to_string()
+        .parse()
+        .context("beginning of verse range is not a valid number")?;
+
+    let end: i32 = range[1]
+        .to_string()
+        .parse()
+        .context("end of verse range is not a valid number")?;
+
+    let file_path = get_path_to_bible_file(config)?.into_string().unwrap();
+    let bible_string = read_bible_from_file(&file_path)?;
+
+    //the entire bible is at my disposal now
+    let parsed_bible = parse(&bible_string)?;
+
+    for i in begin..end + 1 {
+        let xml_format_ch_vs = format!("{}.{}.{}", book, chapter, i);
+        let verse = get_verse_from_xml(&parsed_bible, &xml_format_ch_vs)?;
+        passage += &verse;
+    }
+    Ok(passage)
+}
+pub fn get_passage(config: &Config, book: &str, chapter_verse: &str) -> anyhow::Result<String> {
+    //separate the chapter from the verse(s)
+    let chpt_vs_split: Vec<&str> = chapter_verse.split(':').collect();
+    let chapter: &str = chpt_vs_split[0];
+    let verses: &str = chpt_vs_split[1];
+    let passage: String;
+
+    if verses.contains('-') {
+        passage = get_range_verse(config, book, chapter, verses)?;
+    } else {
+        passage = get_single_verse(config, book, chapter, verses)?;
+    }
+    Ok(passage)
+}
+
+///print the passage of scripture to the terminal
+pub fn print_passage(config: &Config, book: &str, chapter_verse: &str) -> anyhow::Result<()> {
+    let text = get_passage(config, book, chapter_verse)?;
     println!("{}", text);
     Ok(())
 }
 
 pub fn read_passage(book: &str, chapter_verse: &str) -> anyhow::Result<()> {
-    Ok(())
+    todo!()
 }
 
 pub fn today() -> anyhow::Result<()> {
-    Ok(())
+    todo!()
 }
 
 ///get the absolute path to the bible xml file
@@ -161,8 +213,27 @@ mod tests {
         assert_ne!("", text);
     }
     #[test]
-    fn test_print_passage() {
-        print_passage(&Config::default(), "Gen", "1:2").unwrap();
-        let expected = "And the earth was waste and void; and darkness was upon the face of the deep: and the Spirit of God moved upon the face of the waters";
+    fn test_get_passage_correct() {
+        let vs1 = "In the beginning God created the heavens and the earth.";
+
+        let actual = get_passage(&Config::default(), "Gen", "1:1").unwrap();
+
+        assert_eq!(vs1, actual);
+    }
+
+    #[test]
+    fn passage_range_test() {
+        let vs1 = "In the beginning God created the heavens and the earth.";
+        let vs2 = "And the earth was waste and void; and darkness was upon the face of the deep: and the Spirit of God moved upon the face of the waters";
+
+        let actual = get_passage(&Config::default(), "Gen", "1:1-2").unwrap();
+        let expected = vs1.to_owned() + &vs2.to_owned();
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn test_get_passage_err() {
+        assert!(get_passage(&Config::default(), "gen", "1:2").is_err());
     }
 }
