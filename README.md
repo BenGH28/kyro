@@ -1,4 +1,14 @@
-# ☧ kyro - the Bible on the command line
+# WIP: ☧ kyro - the Bible on the command line
+
+- Currently a work in progress while I finish off school. THERE WILL BE BUGS.
+- The listed commands below are planned to be implemented
+
+# What is implemented?
+- [x] search 
+- [ ] read
+- [ ] today
+- [x] help
+- [ ] list-bibles
 
 ## Commands
 
