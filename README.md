@@ -4,9 +4,10 @@
 - The listed commands below are planned to be implemented
 
 # What is implemented?
-- [x] search 
-- [ ] read
-- [ ] today
+- [x] search for passage within a chapter
+- [ ] search for multi-chapter passage
+- [ ] read command
+- [ ] today command
 - [x] help
 - [ ] list-bibles
 
