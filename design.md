@@ -88,6 +88,6 @@ we don't already have it in on the computer and we download it if necessary.
     -   [x] Get a Bible from gratis-bible
         -   [x] store it in `$XDG_DATA_HOME`
     -   [x] use `anyhow` for better error handling
-    -   [ ] parse the Bible xml
-    -   [ ] print the Bible to the terminal
+    -   [x] parse the Bible xml
+    -   [x] print the Bible to the terminal
     -   [ ] show the Bible in a buffer like `man` or `less` (make the buffer uneditable).
