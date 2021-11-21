@@ -97,7 +97,7 @@ pub fn print_passage(config: &Config, book: &str, chapter_verse: &str) -> anyhow
     let xml_vs: roxmltree::Node = parsed_bible
         .descendants()
         .find(|n| n.attribute("osisID") == Some(&xml_format_ch_vs))
-        .unwrap();
+        .context("Could not find the selected passage")?;
     let text = xml_vs.first_child().unwrap().text().unwrap();
     println!("{}", text);
     Ok(())
@@ -163,6 +163,5 @@ mod tests {
     #[test]
     fn test_print_passage() {
         print_passage(&Config::default(), "Gen", "1:2").unwrap();
-        let expected = "And the earth was waste and void; and darkness was upon the face of the deep: and the Spirit of God moved upon the face of the waters";
     }
 }
