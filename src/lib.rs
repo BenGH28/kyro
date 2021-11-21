@@ -134,16 +134,37 @@ fn get_range_verse(
     Ok(passage)
 }
 pub fn get_passage(config: &Config, book: &str, chapter_verse: &str) -> anyhow::Result<String> {
-    //separate the chapter from the verse(s)
-    let chpt_vs_split: Vec<&str> = chapter_verse.split(':').collect();
-    let chapter: &str = chpt_vs_split[0];
-    let verses: &str = chpt_vs_split[1];
+    //look for the '-' which will separate either a verse from a verse(Gen. 1:1-2)
+    //or chapter from a verse (Gen. 1:31-2:1);
+    let hyphen_split: Vec<&str> = chapter_verse.split('-').collect();
+    let is_range: bool = chapter_verse.contains('-');
+
+    //this will be a chapter and verse pair
+    let start_of_passage: Vec<&str> = hyphen_split[0].split(":").collect();
+    let start_chpt = start_of_passage[0];
+    let start_vs = start_of_passage[1];
+
+    //this might be a chapter-verse pair or just a verse (ie. 2:1 or 1)
+    let end_of_passage: &str = hyphen_split[1];
+
+    //check if end_of_passage is a chapter verse pair
+    //if it isn't a pair then it is a vec of size 1
+    let end_chpt_vs: Vec<&str> = end_of_passage.split(':').collect();
+    let end_chpt: &str;
+    let end_vs: &str;
+    if end_chpt_vs.len() == 1 {
+        end_vs = end_chpt_vs[0];
+    } else {
+        end_chpt = end_chpt_vs[0];
+        end_vs = end_chpt_vs[1];
+    }
+
     let passage: String;
 
-    if verses.contains('-') {
-        passage = get_range_verse(config, book, chapter, verses)?;
+    if is_range {
+        passage = get_range_verse(config, book, start_chpt, end_vs)?;
     } else {
-        passage = get_single_verse(config, book, chapter, verses)?;
+        passage = get_single_verse(config, book, start_chpt, start_vs)?;
     }
     Ok(passage)
 }
@@ -223,11 +244,18 @@ mod tests {
 
     #[test]
     fn passage_range_test() {
-        let vs1 = "In the beginning God created the heavens and the earth.";
-        let vs2 = "And the earth was waste and void; and darkness was upon the face of the deep: and the Spirit of God moved upon the face of the waters";
+        let gen_vs1 = "In the beginning God created the heavens and the earth.";
+        let gen_vs2 = "And the earth was waste and void; and darkness was upon the face of the deep: and the Spirit of God moved upon the face of the waters";
 
-        let actual = get_passage(&Config::default(), "Gen", "1:1-2").unwrap();
-        let expected = vs1.to_owned() + &vs2.to_owned();
+        let gen_1vs31 = "God saw all that he had made, and it was very good. And there was evening, and there was morning—the sixth day.";
+        let gen_2vs1 = "Thus the heavens and the earth were completed in all their vast array.";
+
+        let mut actual = get_passage(&Config::default(), "Gen", "1:1-2").unwrap();
+        let mut expected = gen_vs1.to_owned() + &gen_vs2.to_owned();
+        assert_eq!(expected, actual);
+
+        actual = get_passage(&Config::default(), "Gen", "1:31-2:1").unwrap();
+        expected = gen_1vs31.to_owned() + &gen_2vs1.to_owned();
 
         assert_eq!(expected, actual);
     }
