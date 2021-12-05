@@ -33,7 +33,7 @@ pub fn get_data_dir() -> Option<PathBuf> {
 ///Download the Bible and save it on your computer
 pub fn download_bible(lang_code: &str, config: &Config) -> anyhow::Result<()> {
     let url = get_bible_url(lang_code, &config.version);
-    save_to_pc(&url, &config)?;
+    save_to_pc(&url, config)?;
     Ok(())
 }
 
