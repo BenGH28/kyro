@@ -111,12 +111,10 @@ fn get_range_verse(
     let range: Vec<&str> = verses.split('-').collect();
 
     let begin: i32 = range[0]
-        .to_string()
         .parse()
         .context("beginning of verse range is not a valid number")?;
 
     let end: i32 = range[1]
-        .to_string()
         .parse()
         .context("end of verse range is not a valid number")?;
 
