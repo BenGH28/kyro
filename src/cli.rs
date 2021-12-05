@@ -18,7 +18,7 @@ impl Command {
             Command::Search {
                 book,
                 chapter_verse,
-            } => print_passage(&config, book, chapter_verse),
+            } => print_passage(config, book, chapter_verse),
             Command::Read {
                 book,
                 chapter_verse,
