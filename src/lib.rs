@@ -33,7 +33,7 @@ pub fn get_data_dir() -> Option<PathBuf> {
 ///Download the Bible and save it on your computer
 pub fn download_bible(lang_code: &str, config: &Config) -> anyhow::Result<()> {
     let url = get_bible_url(lang_code, &config.version);
-    save_to_pc(&url, &config)?;
+    save_to_pc(&url, config)?;
     Ok(())
 }
 
@@ -41,15 +41,19 @@ pub fn download_bible(lang_code: &str, config: &Config) -> anyhow::Result<()> {
 pub fn save_to_pc(url: &str, config: &Config) -> anyhow::Result<()> {
     //get data_dir: $HOME/.local/share/kyro/
     let data_dir: PathBuf = get_data_dir().context("couldn't determine data dir path")?;
+
     //get the path to the language sub directory (ie. $HOME/.local/share/kyro/english/)
     let language_dir: PathBuf = data_dir.join(&config.language);
+
     //the full path to the file (ie. $HOME/.local/share/kyro/english/asv.xml)
     let file_path: PathBuf = language_dir.join(config.get_file_name());
+
     //if the directory doesn't exist then lets create it
     if !language_dir.is_dir() {
         std::fs::create_dir_all(language_dir)
             .context("could not create kyro project data directory")?;
     }
+
     //if the file doesn't exist then we can write it
     if !file_path.is_file() {
         //create and write the Bible to a file
@@ -111,12 +115,10 @@ fn get_range_verse(
     let range: Vec<&str> = verses.split('-').collect();
 
     let begin: i32 = range[0]
-        .to_string()
         .parse()
         .context("beginning of verse range is not a valid number")?;
 
     let end: i32 = range[1]
-        .to_string()
         .parse()
         .context("end of verse range is not a valid number")?;
 
@@ -234,30 +236,32 @@ mod tests {
         assert_ne!("", text);
     }
     #[test]
-    fn test_get_passage_correct() {
+    fn test_get_passage_correct() -> anyhow::Result<()> {
         let vs1 = "In the beginning God created the heavens and the earth.";
 
+        let config = Config::get_config()?;
+        let lang_code = config.get_language_code().context("Unknown language")?;
+        download_bible(&lang_code, &config)?;
         let actual = get_passage(&Config::default(), "Gen", "1:1").unwrap();
 
         assert_eq!(vs1, actual);
+        Ok(())
     }
 
     #[test]
-    fn passage_range_test() {
-        let gen_vs1 = "In the beginning God created the heavens and the earth.";
-        let gen_vs2 = "And the earth was waste and void; and darkness was upon the face of the deep: and the Spirit of God moved upon the face of the waters";
+    fn passage_range_test() -> anyhow::Result<()> {
+        let vs1 = "In the beginning God created the heavens and the earth.";
+        let vs2 = "And the earth was waste and void; and darkness was upon the face of the deep: and the Spirit of God moved upon the face of the waters";
 
-        let gen_1vs31 = "God saw all that he had made, and it was very good. And there was evening, and there was morning—the sixth day.";
-        let gen_2vs1 = "Thus the heavens and the earth were completed in all their vast array.";
+        let config = Config::get_config()?;
+        let lang_code = config.get_language_code().context("Unknown language")?;
+        download_bible(&lang_code, &config)?;
 
-        let mut actual = get_passage(&Config::default(), "Gen", "1:1-2").unwrap();
-        let mut expected = gen_vs1.to_owned() + &gen_vs2.to_owned();
-        assert_eq!(expected, actual);
-
-        actual = get_passage(&Config::default(), "Gen", "1:31-2:1").unwrap();
-        expected = gen_1vs31.to_owned() + &gen_2vs1.to_owned();
+        let actual = get_passage(&Config::default(), "Gen", "1:1-2").unwrap();
+        let expected = vs1.to_owned() + &vs2.to_owned();
 
         assert_eq!(expected, actual);
+        Ok(())
     }
 
     #[test]
