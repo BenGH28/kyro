@@ -1,5 +1,3 @@
-#![allow(unused_variables)]
-#![allow(dead_code)]
 mod config;
 
 use std::fs;
@@ -88,6 +86,7 @@ fn get_verse_from_xml(
     let text = xml_vs.first_child().unwrap().text().unwrap().to_owned();
     Ok(text)
 }
+
 fn get_single_verse(
     config: &Config,
     book: &str,
