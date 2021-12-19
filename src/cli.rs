@@ -1,4 +1,4 @@
-use kyro::{print_passage, read_passage, today, Config};
+use kyro::{print_passage, read_passage, today_passage, Config};
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -23,7 +23,7 @@ impl Command {
                 book,
                 chapter_verse,
             } => read_passage(book, chapter_verse),
-            Command::Today => today(),
+            Command::Today => today_passage(),
         }
     }
 }

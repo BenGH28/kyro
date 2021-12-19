@@ -75,6 +75,7 @@ fn parse(bible_string: &str) -> anyhow::Result<roxmltree::Document> {
     Ok(bible)
 }
 
+///get single verse from the xml
 fn get_verse_from_xml(
     parsed_bible: &roxmltree::Document,
     search_string: &str,
@@ -105,22 +106,41 @@ fn get_single_verse(
     Ok(text)
 }
 
-fn get_range_verse(
+fn get_multi_chpt_range(
+    config: &Config,
+    book: &str,
+    chpt_begin: &str,
+    vs_begin: &str,
+    chpt_end: &str,
+    vs_end: &str,
+) -> anyhow::Result<String> {
+    let mut passage: String = "".to_string();
+    let file_path = get_path_to_bible_file(config)?.into_string().unwrap();
+    let bible_string = read_bible_from_file(&file_path)?;
+    let parsed_bible = parse(&bible_string)?;
+
+    let begin = vs_begin.parse::<u32>().unwrap();
+    let end = vs_end.parse::<u32>().unwrap();
+
+    for i in begin..end + 1 {
+        let xml_format_ch_vs = format!("{}.{}.{}", book, chpt_begin, i);
+        let verse = get_verse_from_xml(&parsed_bible, &xml_format_ch_vs)?;
+        if i != begin {
+            passage += " ";
+        }
+        passage += &verse;
+    }
+
+    todo!()
+}
+
+fn get_verse_range(
     config: &Config,
     book: &str,
     chapter: &str,
-    verses: &str,
+    verses: (u32, u32),
 ) -> anyhow::Result<String> {
     let mut passage: String = "".to_string();
-    let range: Vec<&str> = verses.split('-').collect();
-
-    let begin: i32 = range[0]
-        .parse()
-        .context("beginning of verse range is not a valid number")?;
-
-    let end: i32 = range[1]
-        .parse()
-        .context("end of verse range is not a valid number")?;
 
     let file_path = get_path_to_bible_file(config)?.into_string().unwrap();
     let bible_string = read_bible_from_file(&file_path)?;
@@ -128,47 +148,63 @@ fn get_range_verse(
     //the entire bible is at my disposal now
     let parsed_bible = parse(&bible_string)?;
 
+    let begin: u32 = verses.0;
+    let end: u32 = verses.1;
+
     for i in begin..end + 1 {
         let xml_format_ch_vs = format!("{}.{}.{}", book, chapter, i);
         let verse = get_verse_from_xml(&parsed_bible, &xml_format_ch_vs)?;
+        if i != begin {
+            passage += " ";
+        }
         passage += &verse;
     }
     Ok(passage)
 }
-pub fn get_passage(config: &Config, book: &str, chapter_verse: &str) -> anyhow::Result<String> {
-    //look for the '-' which will separate either a verse from a verse(Gen. 1:1-2)
-    //or chapter from a verse (Gen. 1:31-2:1);
-    let hyphen_split: Vec<&str> = chapter_verse.split('-').collect();
-    let is_range: bool = chapter_verse.contains('-');
 
-    //this will be a chapter and verse pair
-    let start_of_passage: Vec<&str> = hyphen_split[0].split(":").collect();
-    let start_chpt = start_of_passage[0];
-    let start_vs = start_of_passage[1];
+/// returns true if passage_string contains '-' false otherwise
+fn passage_is_range(passage_string: &str) -> bool {
+    passage_string.contains("-")
+}
 
-    //this might be a chapter-verse pair or just a verse (ie. 2:1 or 1)
-    let end_of_passage: &str = hyphen_split[1];
+fn split_passage(passage: &str, delimiter: char) -> (&str, &str) {
+    let mid = passage.chars().position(|c| c == delimiter).unwrap();
+    let (rhs, lhs) = passage.split_at(mid);
+    (rhs, lhs.trim_matches(delimiter))
+}
 
-    //check if end_of_passage is a chapter verse pair
-    //if it isn't a pair then it is a vec of size 1
-    let end_chpt_vs: Vec<&str> = end_of_passage.split(':').collect();
-    let end_chpt: &str;
-    let end_vs: &str;
-    if end_chpt_vs.len() == 1 {
-        end_vs = end_chpt_vs[0];
-    } else {
-        end_chpt = end_chpt_vs[0];
-        end_vs = end_chpt_vs[1];
+fn is_chpt_and_vs(input: &str) -> bool {
+    input.contains(':')
+}
+
+pub fn get_passage(config: &Config, book: &str, passage_string: &str) -> anyhow::Result<String> {
+    if passage_is_range(passage_string) {
+        //rhs WILL be of the format <chpt>:<vs>
+        //lhs has 2 possibilities <chpt>:<vs> OR <vs>
+        let (rhs, lhs) = split_passage(passage_string, '-');
+
+        //handle rhs first
+        let (chpt_begin, verse_begin) = split_passage(rhs, ':');
+
+        //handle lhs next
+        if is_chpt_and_vs(lhs) {
+            let (chpt_end, verse_end) = split_passage(lhs, ':');
+            let passage =
+                get_multi_chpt_range(config, book, chpt_begin, verse_begin, chpt_end, verse_end)?;
+            return Ok(passage);
+        }
+        let verses = (
+            verse_begin.parse::<u32>().unwrap(),
+            lhs.parse::<u32>().unwrap(),
+        );
+
+        let passage = get_verse_range(config, book, chpt_begin, verses)?;
+        return Ok(passage);
     }
 
-    let passage: String;
-
-    if is_range {
-        passage = get_range_verse(config, book, start_chpt, end_vs)?;
-    } else {
-        passage = get_single_verse(config, book, start_chpt, start_vs)?;
-    }
-    Ok(passage)
+    let (chapter, verse) = split_passage(passage_string, ':');
+    let single_vs = get_single_verse(config, book, chapter, verse)?;
+    Ok(single_vs)
 }
 
 ///print the passage of scripture to the terminal
@@ -182,7 +218,7 @@ pub fn read_passage(book: &str, chapter_verse: &str) -> anyhow::Result<()> {
     todo!()
 }
 
-pub fn today() -> anyhow::Result<()> {
+pub fn today_passage() -> anyhow::Result<()> {
     todo!()
 }
 
@@ -258,7 +294,7 @@ mod tests {
         download_bible(&lang_code, &config)?;
 
         let actual = get_passage(&Config::default(), "Gen", "1:1-2").unwrap();
-        let expected = vs1.to_owned() + &vs2.to_owned();
+        let expected = format!("{} {}", &vs1, &vs2);
 
         assert_eq!(expected, actual);
         Ok(())
