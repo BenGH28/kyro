@@ -1,21 +1,27 @@
 # Potential Bible Sources
 
--   API's
-    -   [API.Bible](https://scripture.api.bible/)
-        -   free for non-commercial use but I'd need to use my API key for everyone maybe unless everyone makes their own account with the site and gets their own key (potenial for abuse of service?).
-        -   has multiple bibles available
-    -   [ESV API](https://api.esv.org/)
-        -   ESV only and need to do a bunch of stuff with copyright most likely
--   Non-API
-    -   [Gratis Bible](https://github.com/gratis-bible/bible)
-        -   many many languages availble each with multiple bible support
-        -   can store things locally
+- API's
+  - [API.Bible](https://scripture.api.bible/)
+    - free for non-commercial use but I'd need to use my API key for everyone maybe unless everyone makes their own account with the site and gets their own key (potenial for abuse of service?).
+    - has multiple bibles available
+  - [ESV API](https://api.esv.org/)
+    - ESV only and need to do a bunch of stuff with copyright most likely
+- Non-API
+
+  - [Gratis Bible](https://github.com/gratis-bible/bible)
+
+    - many many languages availble each with multiple bible support
+    - can store things locally
+
+  - [eBible.org](https://ebible.org/download.php)
+    - much better xml format
+    - better Bibles to choose from (at least for English)
 
 # Selected Bible Sources
 
--   **Gratis Bible**
-    -   offers much ease for me
-    -   I can use it as a submodule in the project and reference that maybe
+- **Gratis Bible**
+  - offers much ease for me
+  - I can use it as a submodule in the project and reference that maybe
 
 # Configuration
 
@@ -83,11 +89,11 @@ we don't already have it in on the computer and we download it if necessary.
 
 # Todo
 
--   [ ] Make English work first
-    -   [x] Get the config file setup
-    -   [x] Get a Bible from gratis-bible
-        -   [x] store it in `$XDG_DATA_HOME`
-    -   [x] use `anyhow` for better error handling
-    -   [x] parse the Bible xml
-    -   [x] print the Bible to the terminal
-    -   [ ] show the Bible in a buffer like `man` or `less` (make the buffer uneditable).
+- [ ] Make English work first
+  - [x] Get the config file setup
+  - [x] Get a Bible from gratis-bible
+    - [x] store it in `$XDG_DATA_HOME`
+  - [x] use `anyhow` for better error handling
+  - [x] parse the Bible xml
+  - [x] print the Bible to the terminal
+  - [ ] show the Bible in a buffer like `man` or `less` (make the buffer uneditable).
