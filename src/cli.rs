@@ -1,4 +1,4 @@
-use kyro::{print_passage, read_passage, today, Config};
+use crate::{Config, print_passage, read_passage, today};
 use structopt::StructOpt;
 
 #[derive(StructOpt)]

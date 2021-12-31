@@ -1,7 +1,5 @@
-use kyro::{download_bible, Config};
-mod cli;
 use anyhow::Context as _;
-use cli::Command;
+use kyro::{download_bible, Command, Config};
 use structopt::StructOpt;
 
 fn main() -> anyhow::Result<()> {
