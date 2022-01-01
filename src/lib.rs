@@ -3,6 +3,7 @@ mod cli;
 mod config;
 mod parse;
 mod storage;
+
 use crate::parse::get_passage;
 pub use crate::storage::*;
 pub use cli::Command;
@@ -29,10 +30,8 @@ mod tests {
 
     #[test]
     fn test_get_bible_text() {
-        let config = Config::default();
-        let code = config.get_language_code().unwrap();
-        let url: String = storage::get_bible_url(&code, &config.version);
-        let text: String = storage::get_bible_text(&url).unwrap();
+        let url: String = storage::get_bible_url();
+        let text: bytes::Bytes = storage::get_bible_zip(&url).unwrap();
         assert_ne!("", text);
     }
 }

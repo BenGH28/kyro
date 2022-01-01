@@ -115,7 +115,7 @@ mod tests {
 
         let config = Config::get_config()?;
         let lang_code = config.get_language_code().context("Unknown language")?;
-        storage::download_bible(&lang_code, &config)?;
+        storage::download_bible()?;
         let actual = get_passage(&Config::default(), "Gen", "1:1").unwrap();
 
         assert_eq!(vs1, actual);
@@ -129,7 +129,7 @@ mod tests {
 
         let config = Config::get_config()?;
         let lang_code = config.get_language_code().context("Unknown language")?;
-        storage::download_bible(&lang_code, &config)?;
+        storage::download_bible()?;
 
         let actual = get_passage(&Config::default(), "Gen", "1:1-2").unwrap();
         let expected = vs1.to_owned() + &vs2.to_owned();
