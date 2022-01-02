@@ -46,28 +46,26 @@ pub fn save_to_pc(url: &str) -> anyhow::Result<()> {
 
     //if the directory doesn't exist then lets create it
     if !unzip_dir.is_dir() {
-        fs::create_dir_all(&unzip_dir).context("could not create kyro project data directory")?;
+        std::fs::create_dir_all(&unzip_dir)
+            .context("could not create kyro project data directory")?;
     }
 
     //if the file doesn't exist then we can write it
     if !file_path.is_file() {
+        //create and write the Bible to a file
         let bible_zip: Bytes = get_bible_zip(url)?;
-        let mut file: File =
-            File::create(&file_zip_path).context("could not write Bible to file")?;
+        let mut file: File = File::create(&file_zip_path).context("could not write Bible to file")?;
         file.write_all(&bible_zip)?;
-        unzip(&file_zip_path, &unzip_dir).context("unzipping has failed some how")?;
+        unzip(&file, &unzip_dir).context("unzipping has failed some how")?;
     }
     Ok(())
 }
 
-fn unzip(zipped_file_path: &PathBuf, dest_dir: &PathBuf) -> anyhow::Result<()> {
-    let zipped_file = File::open(zipped_file_path).context("cannot open zip file")?;
-    let mut archive = zip::ZipArchive::new(zipped_file).context("cannot make an archive reader")?;
-
-    let result = archive
-        .extract(dest_dir)
-        .context("cannot extract the files")?;
+fn unzip(zipped_file: &File, dest_dir: &PathBuf)-> anyhow::Result<()>{
+    let mut archive = zip::ZipArchive::new(zipped_file)?;
+    let result = archive.extract(dest_dir)?;
     Ok(result)
+
 }
 pub fn read_bible_from_file(path: &str) -> anyhow::Result<String> {
     let contents = fs::read_to_string(path)?;
@@ -95,15 +93,15 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore]
-    fn test_save_to_pc() -> anyhow::Result<()> {
+    // #[ignore]
+    fn test_save_to_pc() -> anyhow::Result<()>{
         let url = &get_bible_url();
         save_to_pc(url)?;
 
         let data_dir: PathBuf = get_data_dir().context("couldn't determine data dir path")?;
         let file_zip_path: PathBuf = data_dir.join("engnet_usfx.zip");
 
-        assert!(file_zip_path.is_file());
+        assert_eq!(file_zip_path.is_file(), true);
         Ok(())
     }
 
