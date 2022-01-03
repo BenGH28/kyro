@@ -22,6 +22,11 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Format
+        run: |
+            rustup component add rustfmt
+            cargo fmt
+
       - name: Build
         run: cargo build --verbose
 
@@ -33,7 +38,3 @@ jobs:
             rustup component add Clippy
             cargo clippy --all-targets
 
-      - name: Format
-        run: |
-            rustup component add rustfmt
-            cargo fmt

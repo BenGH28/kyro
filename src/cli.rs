@@ -1,4 +1,4 @@
-use crate::{Config, print_passage, read_passage, today};
+use crate::{print_passage, read_passage, today, Config};
 use structopt::StructOpt;
 
 #[derive(StructOpt)]

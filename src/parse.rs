@@ -110,12 +110,11 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_get_passage_correct() -> anyhow::Result<()> {
         let vs1 = "In the beginning God created the heavens and the earth.";
 
-        let config = Config::get_config()?;
-        let lang_code = config.get_language_code().context("Unknown language")?;
-        storage::download_bible()?;
+        storage::download_bible(&Config::default())?;
         let actual = get_passage(&Config::default(), "Gen", "1:1").unwrap();
 
         assert_eq!(vs1, actual);
@@ -123,13 +122,12 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn passage_range_test() -> anyhow::Result<()> {
         let vs1 = "In the beginning God created the heavens and the earth.";
         let vs2 = "And the earth was waste and void; and darkness was upon the face of the deep: and the Spirit of God moved upon the face of the waters";
 
-        let config = Config::get_config()?;
-        let lang_code = config.get_language_code().context("Unknown language")?;
-        storage::download_bible()?;
+        storage::download_bible(&Config::default())?;
 
         let actual = get_passage(&Config::default(), "Gen", "1:1-2").unwrap();
         let expected = vs1.to_owned() + &vs2.to_owned();

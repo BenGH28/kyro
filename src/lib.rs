@@ -30,7 +30,7 @@ mod tests {
 
     #[test]
     fn test_get_bible_text() {
-        let url: String = storage::get_bible_url();
+        let url: String = storage::get_bible_url(&Config::default());
         let text: bytes::Bytes = storage::get_bible_zip(&url).unwrap();
         assert_ne!("", text);
     }

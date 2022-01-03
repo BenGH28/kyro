@@ -1,64 +1,69 @@
+use std::fmt;
+
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
-    pub language: String,
-    pub version: String,
+    pub language: Language,
+    pub version: BibleVersion,
+}
+
+#[derive(Hash, Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd)]
+pub enum Language {
+    English,
+}
+
+impl fmt::Display for Language {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
+pub enum BibleVersion {
+    Net,
+}
+
+impl fmt::Display for BibleVersion {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 impl Default for Config {
     fn default() -> Self {
         Config {
-            language: "english".to_string(),
-            version: "asv".to_string(),
+            language: Language::English,
+            version: BibleVersion::Net,
         }
     }
 }
 
 impl Config {
-    pub fn get_config() -> Result<Config, confy::ConfyError> {
+    pub fn get_config() -> anyhow::Result<Config> {
         let conf: Config = confy::load("kyro")?;
         Ok(conf)
-    }
-
-    pub fn get_language_dict() -> HashMap<String, String> {
-        let mut language_dict: HashMap<String, String> = HashMap::new();
-        language_dict.insert("english".to_string(), "en".to_string());
-        language_dict
-    }
-
-    pub fn get_language_code(&self) -> Option<String> {
-        let key = self.language.to_owned();
-        let language_dict: HashMap<String, String> = Config::get_language_dict();
-        let code = language_dict.get(&key);
-        code.map(|c| c.to_owned())
-    }
-
-    pub fn get_file_name(&self) -> String {
-        self.version.to_owned() + ".xml"
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::config::{BibleVersion, Language};
+
     use super::Config;
     #[test]
     fn test_get_config() {
-        let conf = Config::default();
-        assert_eq!(conf.language, "english".to_owned());
-        assert_eq!(conf.version, "asv".to_owned());
+        let conf = Config::get_config().unwrap();
+        assert_eq!(conf.language, Language::English);
+        assert_eq!(conf.version, BibleVersion::Net);
     }
 
     #[test]
-    fn test_get_language_code() {
-        let config = Config::default();
-        let code = config.get_language_code();
-        let code = match code {
-            Some(code) => code,
-            None => "".to_string(),
-        };
+    fn test_language_display() {
+        let en: Language = Language::English;
 
-        assert_eq!(code, "en".to_string());
+        let en_string: String = en.to_string();
+
+        assert_eq!(en_string, "English");
     }
 }
