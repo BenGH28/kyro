@@ -35,6 +35,6 @@ jobs:
 
       - name: Clippy
         run: |
-            rustup component add Clippy
+            rustup component add clippy
             cargo clippy --all-targets
 
