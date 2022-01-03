@@ -9,7 +9,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 ///Get the raw github URL from the config
-pub fn get_bible_url() -> String {
+pub fn get_bible_url(config: &Config) -> String {
     let url = "https://ebible.org/Scriptures/engnet_usfx.zip".to_string();
     url
 }
@@ -24,8 +24,8 @@ pub fn get_data_dir() -> Option<PathBuf> {
 }
 
 ///Download the Bible and save it on your computer
-pub fn download_bible() -> anyhow::Result<()> {
-    let url = get_bible_url();
+pub fn download_bible(config: &Config) -> anyhow::Result<()> {
+    let url = get_bible_url(config);
     save_to_pc(&url)?;
     Ok(())
 }
@@ -97,7 +97,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_save_to_pc() -> anyhow::Result<()> {
-        let url = &get_bible_url();
+        let url = &get_bible_url(Config::default());
         save_to_pc(url)?;
 
         let data_dir: PathBuf = get_data_dir().context("couldn't determine data dir path")?;
