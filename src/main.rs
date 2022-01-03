@@ -4,7 +4,7 @@ use structopt::StructOpt;
 fn main() -> anyhow::Result<()> {
     //read the config
     let config = Config::get_config()?;
-    download_bible()?;
+    download_bible(&config)?;
     Command::from_args().run(&config)?;
     Ok(())
 }
