@@ -1,4 +1,4 @@
-mod book;
-mod chapter;
-mod passage;
-mod verse;
+pub mod book;
+pub mod chapter;
+pub mod passage;
+pub mod verse;

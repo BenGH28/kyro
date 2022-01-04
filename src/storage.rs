@@ -104,7 +104,7 @@ fn unzip(zipped_file_path: &Path, dest_dir: &Path) -> anyhow::Result<()> {
     Ok(result)
 }
 
-pub fn read_bible_from_file(path: &str) -> anyhow::Result<String> {
+pub fn bible_as_str(path: &str) -> anyhow::Result<String> {
     let contents = fs::read_to_string(path)?;
     Ok(contents)
 }

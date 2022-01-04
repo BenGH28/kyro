@@ -8,17 +8,3 @@ pub struct Book {
     chapters: Vec<Chapter>,
 }
 
-impl Passage for Book {
-    type Output = Book;
-
-    fn next(&mut self) -> Option<Book> {
-        todo!()
-    }
-    fn previous(&mut self) -> Option<Book> {
-        todo!()
-    }
-
-    fn at(location: EntryPoint) -> Option<Book> {
-        todo!()
-    }
-}
