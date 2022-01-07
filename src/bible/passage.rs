@@ -3,10 +3,16 @@ pub trait Passage {
 
     fn next(&mut self) -> Option<Self::Output>;
     fn previous(&mut self) -> Option<Self::Output>;
-    fn at(loc: EntryPoint) -> Option<Self::Output>;
+    fn at(&mut self) -> Option<Self::Output>;
 }
 
-pub struct EntryPoint {
-    chpt: u32,
-    verse: u32,
+pub struct Point {
+    pub chpt: u32,
+    pub verse: u32,
+}
+
+impl Point {
+    pub fn new() -> Self {
+        Self { chpt: 0, verse: 0 }
+    }
 }

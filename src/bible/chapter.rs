@@ -1,9 +1,8 @@
-use crate::bible::passage::EntryPoint;
-use crate::bible::passage::Passage;
+use crate::bible::passage::Point;
 use crate::bible::verse::Verse;
 
 pub struct Chapter {
-    number: u32,
-    entry_point: EntryPoint,
-    verses: Vec<Verse>,
+    pub number: u32,
+    pub entry_point: Point,
+    pub verses: Vec<Verse>,
 }
