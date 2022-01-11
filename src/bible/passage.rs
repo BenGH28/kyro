@@ -6,6 +6,7 @@ pub trait Passage {
     fn at(&mut self) -> Option<Self::Output>;
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct Point {
     pub chpt: u32,
     pub verse: u32,

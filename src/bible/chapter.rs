@@ -1,8 +1,9 @@
+use crate::bible::paragraph::Paragraph;
 use crate::bible::passage::Point;
-use crate::bible::verse::Verse;
 
+#[derive(Debug)]
 pub struct Chapter {
     pub number: u32,
     pub entry_point: Point,
-    pub verses: Vec<Verse>,
+    pub paragraphs: Vec<Paragraph>,
 }

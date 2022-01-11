@@ -1,8 +1,6 @@
 use crate::{
     bible::{book::Book, passage::Point},
-    bible_as_str, get_path_to_bible_file,
-    parse::parse,
-    Config,
+    bible_as_str, get_path_to_bible_file, Config,
 };
 use anyhow::Context;
 use structopt::StructOpt;
@@ -46,17 +44,19 @@ fn setup_a_book(
     config: &Config,
 ) -> anyhow::Result<Book> {
     let bible_str = bible_as_str(get_path_to_bible_file(config)?)?;
-    let bible_doc = parse(&bible_str)?;
-    let title = book_title.to_string();
+    let bible_doc = roxmltree::Document::parse(&bible_str)?;
+    let title = book_title;
     let (start_point, end_point) = split_cli_query(&chapter_verse)?;
-    let mut book: Book = Book::new(title, start_point, end_point);
-    book.init(config, &bible_doc)?;
+    let book: Book = Book::new(title, start_point, end_point, &bible_doc)?;
     Ok(book)
 }
 fn split_cli_query(chpt_vs_query: &str) -> anyhow::Result<(Point, Point)> {
-    let split: Vec<&str> = chpt_vs_query.split('-').collect();
-    let start_point: Vec<&str> = split[0].split(':').collect();
-    let end_point: Vec<&str> = split[1].split(':').collect();
+    let dash = '-';
+    let colon = ':';
+
+    let split: Vec<&str> = chpt_vs_query.split(dash).collect();
+    let start_point: Vec<&str> = split[0].split(colon).collect();
+    let end_point: Vec<&str> = split[1].split(colon).collect();
 
     let start_chpt = start_point[0]
         .parse::<u32>()

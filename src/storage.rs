@@ -5,9 +5,7 @@ use bytes::Bytes;
 use directories_next::ProjectDirs;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::ffi::OsString;
-use std::fs;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
@@ -104,19 +102,18 @@ fn unzip(zipped_file_path: &Path, dest_dir: &Path) -> anyhow::Result<()> {
     Ok(result)
 }
 
-pub fn bible_as_str(path: OsString) -> anyhow::Result<String> {
+pub fn bible_as_str(path: PathBuf) -> anyhow::Result<String> {
     let contents = fs::read_to_string(path)?;
     Ok(contents)
 }
 
 ///get the absolute path to the bible xml file
-pub fn get_path_to_bible_file(config: &Config) -> anyhow::Result<OsString> {
+pub fn get_path_to_bible_file(config: &Config) -> anyhow::Result<PathBuf> {
     let data_dir: PathBuf = get_data_dir().context("couldn't determine data dir path")?;
-    let file_path: OsString = data_dir
+    let file_path: PathBuf = data_dir
         .join(&config.language.to_string())
         .join(&config.version.to_string())
-        .join(usfx_file(config, XML)?)
-        .into_os_string();
+        .join(usfx_file(config, XML)?);
     Ok(file_path)
 }
 
@@ -134,11 +131,7 @@ mod tests {
     fn test_get_bible_file_path() -> anyhow::Result<()> {
         let actual_path = get_path_to_bible_file(&Config::default())?;
         let data_dir: PathBuf = get_data_dir().context("couldn't determine data dir path")?;
-        let expected_path: OsString = data_dir
-            .join("English")
-            .join("Net")
-            .join("engnet_usfx.xml")
-            .into_os_string();
+        let expected_path = data_dir.join("English").join("Net").join("engnet_usfx.xml");
 
         assert_eq!(actual_path, expected_path);
 
