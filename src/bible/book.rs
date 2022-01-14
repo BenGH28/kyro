@@ -1,10 +1,13 @@
+use std::collections::HashMap;
+use std::fmt;
 use std::vec::Vec;
 
 use anyhow::Context;
+use once_cell::sync::Lazy;
 use roxmltree::Node;
 
 use crate::bible::chapter::Chapter;
-use crate::bible::passage::{Passage, Point};
+use crate::bible::passage::Point;
 
 use super::paragraph::Paragraph;
 use super::verse::Verse;
@@ -15,12 +18,80 @@ const ALT_CHPT_NUM_TAG_2: &str = "cp";
 const BOOK_TAG: &str = "book";
 const P_PARA_TAG: &str = "p";
 const Q_PARA_TAG: &str = "q";
-const VERSE_BEGIN_TAG: &str = "v";
-const VERSE_END_TAG: &str = "ve";
 const WORD_TAG: &str = "w";
-const BLANKLN_TAG: &str = "b";
 const ID_TAG: &str = "id";
 const NEW_LN: &str = "\n";
+
+static BOOK_TITLE_ID: Lazy<HashMap<String, String>> = Lazy::new(|| {
+    let mut map = HashMap::new();
+    map.insert("Genesis".to_string(), "GEN".to_string());
+    map.insert("Exodus".to_string(), "EXO".to_string());
+    map.insert("Leviticus".to_string(), "LEV".to_string());
+    map.insert("Numbers".to_string(), "NUM".to_string());
+    map.insert("Deuteronomy".to_string(), "DEU".to_string());
+    map.insert("Joshua".to_string(), "JOS".to_string());
+    map.insert("Judges".to_string(), "JDG".to_string());
+    map.insert("Ruth".to_string(), "RUT".to_string());
+    map.insert("1 Samuel".to_string(), "1SA".to_string());
+    map.insert("2 Samuel".to_string(), "2SA".to_string());
+    map.insert("1 Kings".to_string(), "1KI".to_string());
+    map.insert("2 Kings".to_string(), "2KI".to_string());
+    map.insert("1 Chronicles".to_string(), "1CH".to_string());
+    map.insert("2 Chronicles".to_string(), "2CH".to_string());
+    map.insert("Ezra".to_string(), "EZR".to_string());
+    map.insert("Nehemiah".to_string(), "NEH".to_string());
+    map.insert("Esther".to_string(), "EST".to_string());
+    map.insert("Job".to_string(), "JOB".to_string());
+    map.insert("Psalms".to_string(), "PSA".to_string());
+    map.insert("Proverbs".to_string(), "PRO".to_string());
+    map.insert("Ecclesiastes".to_string(), "ECC".to_string());
+    map.insert("Song of Solomon".to_string(), "SNG".to_string());
+    map.insert("Isaiah".to_string(), "ISA".to_string());
+    map.insert("Jeremiah".to_string(), "JER".to_string());
+    map.insert("Lamentations".to_string(), "LAM".to_string());
+    map.insert("Ezekiel".to_string(), "EZK".to_string());
+    map.insert("Daniel".to_string(), "DAN".to_string());
+    map.insert("Hosea".to_string(), "HOS".to_string());
+    map.insert("Joel".to_string(), "JOL".to_string());
+    map.insert("Amos".to_string(), "AMO".to_string());
+    map.insert("Obadiah".to_string(), "OBA".to_string());
+    map.insert("Jonah".to_string(), "JON".to_string());
+    map.insert("Micah".to_string(), "MIC".to_string());
+    map.insert("Nahum".to_string(), "NAM".to_string());
+    map.insert("Habakkuk".to_string(), "HAB".to_string());
+    map.insert("Zephaniah".to_string(), "ZEP".to_string());
+    map.insert("Haggai".to_string(), "HAG".to_string());
+    map.insert("Zechariah".to_string(), "ZEC".to_string());
+    map.insert("Malachi".to_string(), "MAL".to_string());
+    map.insert("Matthew".to_string(), "MAT".to_string());
+    map.insert("Mark".to_string(), "MRK".to_string());
+    map.insert("Luke".to_string(), "LUK".to_string());
+    map.insert("John".to_string(), "JHN".to_string());
+    map.insert("Acts".to_string(), "ACT".to_string());
+    map.insert("Romans".to_string(), "ROM".to_string());
+    map.insert("1 Corinthians".to_string(), "1CO".to_string());
+    map.insert("2 Corinthians".to_string(), "2CO".to_string());
+    map.insert("Galations".to_string(), "GAL".to_string());
+    map.insert("Ephesians".to_string(), "EPH".to_string());
+    map.insert("Philippians".to_string(), "PHP".to_string());
+    map.insert("Colossians".to_string(), "COL".to_string());
+    map.insert("1 Thessalonians".to_string(), "1TH".to_string());
+    map.insert("2 Thessalonians".to_string(), "2TH".to_string());
+    map.insert("1 Timothy".to_string(), "1TI".to_string());
+    map.insert("2 Timothy".to_string(), "2TI".to_string());
+    map.insert("Titus".to_string(), "TIT".to_string());
+    map.insert("Philemon".to_string(), "PHM".to_string());
+    map.insert("Hebrews".to_string(), "HEB".to_string());
+    map.insert("James".to_string(), "JAS".to_string());
+    map.insert("1 Peter".to_string(), "1PE".to_string());
+    map.insert("2 Peter".to_string(), "2PE".to_string());
+    map.insert("1 John".to_string(), "1JN".to_string());
+    map.insert("2 John".to_string(), "2JN".to_string());
+    map.insert("3 John".to_string(), "3JN".to_string());
+    map.insert("Jude".to_string(), "JUD".to_string());
+    map.insert("Revelation".to_string(), "REV".to_string());
+    map
+});
 
 pub struct Book {
     pub title: String,
@@ -36,9 +107,10 @@ impl Book {
         end_point: Point,
         bible_doc: &roxmltree::Document,
     ) -> anyhow::Result<Self> {
+        let title_id = BOOK_TITLE_ID.get(&title).context("no book by that title")?;
         let full_book_node: Node = bible_doc
             .descendants()
-            .find(|node| node.has_tag_name(BOOK_TAG))
+            .find(|node| node.has_tag_name(BOOK_TAG) && node.attribute(ID_TAG) == Some(title_id))
             .context("there is no tag by that name")?;
 
         let mut book_struct = Book {
@@ -100,10 +172,10 @@ impl Book {
                         if v.has_tag_name(WORD_TAG) || v.is_text() {
                             if let Some(t) = v.text() {
                                 //we don't want to add '\n' after each <w/> tag
-                                if let Some(s) = t.strip_suffix(NEW_LN) {
-                                    verse.contents += s;
+                                if t.contains(NEW_LN) {
+                                    verse.contents.push_str(&t.replace("\n", " "));
                                 } else {
-                                    verse.contents += t;
+                                    verse.contents.push_str(t);
                                 }
                             }
                         }
@@ -116,6 +188,16 @@ impl Book {
             }
         }
 
+        Ok(())
+    }
+}
+
+impl fmt::Display for Book {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}", self.title.to_uppercase())?;
+        for ch in &self.chapters {
+            write!(f, "{}\n\n", ch)?;
+        }
         Ok(())
     }
 }
@@ -205,6 +287,17 @@ mod tests {
             }
         }
 
+        Ok(())
+    }
+
+    #[test]
+    fn display_book() -> anyhow::Result<()> {
+        let title = "1 John".to_string();
+        download_bible(&Config::default())?;
+        let bible_str = bible_as_str(get_path_to_bible_file(&Config::default())?)?;
+        let bible_doc = roxmltree::Document::parse(&bible_str)?;
+        let book = Book::new(title, Point::new(), Point::new(), &bible_doc)?;
+        print!("{}", book);
         Ok(())
     }
 }
