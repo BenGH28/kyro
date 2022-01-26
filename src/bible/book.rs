@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::fmt;
 use std::vec::Vec;
 
@@ -6,8 +7,8 @@ use anyhow::Context;
 use once_cell::sync::Lazy;
 use roxmltree::Node;
 
-use crate::bible::chapter::Chapter;
-use crate::bible::passage::Point;
+use super::chapter::Chapter;
+use super::passage::{self, Point};
 
 use super::paragraph::Paragraph;
 use super::verse::Verse;
@@ -97,6 +98,8 @@ pub struct Book {
     pub title: String,
     pub entry_point: Point,
     pub end_point: Point,
+    pub next_point: Point,
+    pub prev_point: Point,
     pub chapters: Vec<Chapter>,
 }
 
@@ -107,15 +110,29 @@ impl Book {
         end_point: Point,
         bible_doc: &roxmltree::Document,
     ) -> anyhow::Result<Self> {
-        let title_id = BOOK_TITLE_ID.get(&title).context("no book by that title")?;
+        let title_id = BOOK_TITLE_ID
+            .get(&title)
+            .context(format!("{} is not book of the Bible", &title))?;
         let full_book_node: Node = bible_doc
             .descendants()
             .find(|node| node.has_tag_name(BOOK_TAG) && node.attribute(ID_TAG) == Some(title_id))
-            .context("there is no tag by that name")?;
+            .context(format!("cannot find the book of {}", &title))?;
+
+        let next_point = Point {
+            chpt: entry_point.chpt + 1,
+            verse: entry_point.verse,
+        };
+
+        let prev_point = Point {
+            chpt: entry_point.chpt - 1,
+            verse: entry_point.verse,
+        };
 
         let mut book_struct = Book {
             title,
             entry_point,
+            next_point,
+            prev_point,
             end_point,
             chapters: Vec::new(),
         };
@@ -138,10 +155,7 @@ impl Book {
                 //make a chapter of the book and then start working on it
                 let chapter = Chapter {
                     number: num,
-                    entry_point: Point {
-                        chpt: num,
-                        verse: 1,
-                    },
+                    entry_vs: self.entry_point.verse,
                     paragraphs: Vec::new(),
                 };
                 self.chapters.push(chapter);
@@ -156,10 +170,7 @@ impl Book {
 
                 if child.has_children() {
                     //make a verse to add to the paragraph later
-                    let mut verse = Verse {
-                        number: 0,
-                        contents: String::from(""),
-                    };
+                    let mut verse = Verse::new(0, "");
                     for v in child.children() {
                         // make sure to set the verse number
                         if v.has_attribute(ID_TAG) {
@@ -193,7 +204,7 @@ impl Book {
 }
 
 impl fmt::Display for Book {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "{}", self.title.to_uppercase())?;
         for ch in &self.chapters {
             write!(f, "{}\n\n", ch)?;
@@ -202,79 +213,111 @@ impl fmt::Display for Book {
     }
 }
 
+impl passage::Navigate for Book {
+    type Output = Chapter;
+
+    fn forward(&mut self) -> Option<&Chapter> {
+        //return the next chapter in the book
+
+        //if the book has a next chapter to return then do so
+        let last_chpt: u32 = self.chapters.len().try_into().unwrap();
+        let ch = self
+            .chapters
+            .iter()
+            .find(|c| c.number == self.next_point.chpt);
+        if self.next_point.chpt < last_chpt {
+            self.next_point.chpt += 1;
+        }
+        ch
+    }
+
+    fn backward(&mut self) -> Option<&Chapter> {
+        let first_chpt = 1;
+        let ch = self
+            .chapters
+            .iter()
+            .find(|c| c.number == self.prev_point.chpt);
+        if self.prev_point.chpt > first_chpt {
+            self.prev_point.chpt -= 1;
+        }
+        ch
+    }
+
+    fn begin(&self) -> anyhow::Result<&Chapter> {
+        if !self.entry_point.is_empty() {
+            let result = self
+                .chapters
+                .iter()
+                .find(|c| c.number == self.entry_point.chpt)
+                .context(format!("could not find chapter {}", self.entry_point.chpt))?;
+            Ok(result)
+        } else {
+            Ok(&self.chapters[0])
+        }
+    }
+
+    fn end(&self) -> Option<&Chapter> {
+        if self.end_point.is_empty() {
+            None
+        } else {
+            self.chapters
+                .iter()
+                .find(|c| c.number == self.end_point.chpt)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{bible_as_str, get_path_to_bible_file};
     use crate::{download_bible, Config};
+    //bring the trait in scope
+    use super::passage::*;
+    use rstest::*;
 
-    #[test]
-    #[ignore]
-    fn get_nodes() -> anyhow::Result<()> {
-        let book_title = "GEN";
-        let bible_str = bible_as_str(get_path_to_bible_file(&Config::default())?)?;
-        let bible_doc = roxmltree::Document::parse(&bible_str)?;
-
-        let full_book: Node = bible_doc
-            .descendants()
-            .find(|node| node.has_tag_name(BOOK_TAG) && node.attribute(ID_TAG) == Some(book_title))
-            .context("there is either no available tag or no available Book with that title")?;
-
-        // println!("{:?}", full_book.descendants());
-
-        assert!(full_book.has_tag_name(BOOK_TAG));
-        assert_eq!(full_book.attribute(ID_TAG), Some(book_title));
-
-        let chapter_node = full_book
-            .descendants()
-            .find(|n| n.has_tag_name(CHPT_NUM_TAG) && n.attribute(ID_TAG) == Some("1"))
-            .context("no chapter node found")?;
-        assert!(chapter_node.attribute(ID_TAG) == Some("1"));
-        assert!(chapter_node.has_siblings());
-
-        // println!("{:?}", chapter_node.descendants());
-
-        let sec_heading = chapter_node.next_sibling().unwrap().next_sibling().unwrap();
-
-        // println!("{:?}", sec_heading);
-
-        assert_eq!(
-            sec_heading.first_child().unwrap().text().unwrap(),
-            "The Creation of the World\n"
-        );
-
-        assert!(sec_heading
-            .next_sibling_element()
-            .unwrap()
-            .has_tag_name("p"));
-
-        let paragraph = sec_heading.next_sibling_element().unwrap();
-        for d in paragraph.descendants() {
-            if d.is_element() {
-                match d.text() {
-                    Some(s) => println!("{:?}", s),
-                    None => continue,
-                }
-            } else {
-                d.text().unwrap();
-            }
-        }
-
-        Ok(())
+    #[fixture]
+    fn book_fixture() -> Book {
+        download_bible(&Config::default()).unwrap();
+        let bible_str = bible_as_str(get_path_to_bible_file(&Config::default()).unwrap()).unwrap();
+        let entry_point = Point::new(2, 2);
+        let end_point = Point::new(3, 3);
+        let bible_doc = roxmltree::Document::parse(&bible_str).unwrap();
+        Book::new("Exodus".to_string(), entry_point, end_point, &bible_doc).unwrap()
     }
 
-    #[test]
-    fn new_book() -> anyhow::Result<()> {
-        download_bible(&Config::default())?;
-        let bible_str = bible_as_str(get_path_to_bible_file(&Config::default())?)?;
-        let entry_point = Point { chpt: 2, verse: 2 };
-        let end_point = Point { chpt: 2, verse: 3 };
-        let bible_doc = roxmltree::Document::parse(&bible_str)?;
-        let book = Book::new("Exodus".to_string(), entry_point, end_point, &bible_doc)?;
+    #[rstest]
+    fn end_book(book_fixture: Book) {
+        let expected_chpt_num = 3;
+        let ch = book_fixture.end().unwrap();
+        assert_eq!(ch.number, expected_chpt_num);
+    }
 
-        assert_ne!(book.chapters.len(), 0);
+    #[rstest]
+    fn begin_book(book_fixture: Book) {
+        let expected_chpt_num = 2;
+        let ch = book_fixture.begin().unwrap();
+        assert_eq!(ch.number, expected_chpt_num);
+    }
 
-        for chpt in book.chapters {
+    #[rstest]
+    fn forward_book(mut book_fixture: Book) {
+        let expected_chpt_num = 3;
+        let ch = book_fixture.forward().unwrap();
+        assert_eq!(ch.number, expected_chpt_num);
+    }
+
+    #[rstest]
+    fn backward_book(mut book_fixture: Book) {
+        let expected_chpt_num = 1;
+        let ch = book_fixture.backward().unwrap();
+        assert_eq!(ch.number, expected_chpt_num);
+    }
+
+    #[rstest]
+    fn new_book(book_fixture: Book) {
+        assert_ne!(book_fixture.chapters.len(), 0);
+        for chpt in book_fixture.chapters {
             assert_ne!(chpt.paragraphs.len(), 0);
             for para in chpt.paragraphs {
                 for i in 0..para.verses.len() {
@@ -286,18 +329,11 @@ mod tests {
                 }
             }
         }
-
-        Ok(())
     }
 
-    #[test]
-    fn display_book() -> anyhow::Result<()> {
-        let title = "1 John".to_string();
-        download_bible(&Config::default())?;
-        let bible_str = bible_as_str(get_path_to_bible_file(&Config::default())?)?;
-        let bible_doc = roxmltree::Document::parse(&bible_str)?;
-        let book = Book::new(title, Point::new(), Point::new(), &bible_doc)?;
-        print!("{}", book);
-        Ok(())
+    #[rstest]
+    #[ignore]
+    fn display_book(book_fixture: Book) {
+        print!("{}", book_fixture);
     }
 }

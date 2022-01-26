@@ -1,5 +1,9 @@
 use crate::{
-    bible::{book::Book, passage::Point},
+    bible::{
+        book::Book,
+        paragraph::Paragraph,
+        passage::{Navigate, Point},
+    },
     bible_as_str, get_path_to_bible_file, Config,
 };
 use anyhow::Context;
@@ -24,17 +28,59 @@ impl Command {
                 chapter_verse,
             } => {
                 let book = setup_a_book(book_title.to_string(), chapter_verse.to_string(), config)?;
-                print_passage(config, book)
+                Command::print_passage(book)
             }
             Command::Read {
                 book: book_title,
                 chapter_verse,
             } => {
                 let book = setup_a_book(book_title.to_string(), chapter_verse.to_string(), config)?;
-                read_passage(book)
+                Command::read_passage(book)
             }
-            Command::Today => today(),
+            Command::Today => Command::today(),
         }
+    }
+
+    fn print_passage(book: Book) -> anyhow::Result<()> {
+        //get the chapter(s) that contain the passage
+        let chpt_begin = book.entry_point.chpt;
+        let verse_begin = book.entry_point.verse;
+        let chpt_end = book.end_point.chpt;
+        let verse_end = book.end_point.verse;
+
+        let mut result: Vec<&Paragraph> = Vec::new();
+
+        let chpt = book.begin()?;
+        let first_paragraph = chpt
+            .paragraphs
+            .iter()
+            .find(|p| {
+                let result = p.verses.iter().find(|v| v.number == verse_begin);
+                match result {
+                    Some(v) => v.number == verse_begin,
+                    None => false,
+                }
+            })
+            .context(format!(
+                "couldn't find verse {} in chapter {}",
+                verse_begin, chpt_begin
+            ))?;
+
+        result.push(first_paragraph);
+        //while let Some(p) = chpt.next() {
+        //    result.push(p);
+        //}
+        ////get the verse(s) from those chapters and display them
+
+        Ok(())
+    }
+
+    fn read_passage(book: Book) -> anyhow::Result<()> {
+        todo!()
+    }
+
+    fn today() -> anyhow::Result<()> {
+        todo!()
     }
 }
 
@@ -54,15 +100,21 @@ fn split_cli_query(chpt_vs_query: &str) -> anyhow::Result<(Point, Point)> {
     let dash = '-';
     let colon = ':';
 
-    let split: Vec<&str> = chpt_vs_query.split(dash).collect();
-    let start_point: Vec<&str> = split[0].split(colon).collect();
-    let end_point: Vec<&str> = split[1].split(colon).collect();
+    // if the user just enters the book title and no chapter:verse then start them off at the
+    // beginning of the book
+    if chpt_vs_query.is_empty() {
+        return Ok((Point::new(1, 1), Point::new(0, 0)));
+    }
 
-    let start_chpt = start_point[0]
+    let split: Vec<&str> = chpt_vs_query.split(dash).collect();
+    let start_vec: Vec<&str> = split[0].split(colon).collect();
+    let end_vec: Vec<&str> = split[1].split(colon).collect();
+
+    let start_chpt = start_vec[0]
         .parse::<u32>()
         .context("starting chapter invalid")?;
 
-    let start_vs = start_point[1]
+    let start_vs = start_vec[1]
         .parse::<u32>()
         .context("starting verse is invalid")?;
 
@@ -71,21 +123,23 @@ fn split_cli_query(chpt_vs_query: &str) -> anyhow::Result<(Point, Point)> {
         verse: start_vs,
     };
 
-    let has_chpt = end_point.len() == 1;
+    let has_chpt = end_vec.len() == 2;
     let end_chpt = if has_chpt {
-        0
-    } else {
-        end_point[0]
+        end_vec[0]
             .parse::<u32>()
             .context("ending chapter is invalid")?
+    } else {
+        0
     };
 
     let end_vs = if has_chpt {
-        end_point[0]
+        end_vec[1]
             .parse::<u32>()
             .context("ending verse is invalid")?
     } else {
-        0
+        end_vec[0]
+            .parse::<u32>()
+            .context("ending verse is invalid")?
     };
 
     let end = Point {
@@ -94,16 +148,4 @@ fn split_cli_query(chpt_vs_query: &str) -> anyhow::Result<(Point, Point)> {
     };
 
     Ok((start, end))
-}
-
-fn print_passage(config: &Config, book: Book) -> anyhow::Result<()> {
-    todo!()
-}
-
-fn read_passage(book: Book) -> anyhow::Result<()> {
-    todo!()
-}
-
-fn today() -> anyhow::Result<()> {
-    todo!()
 }

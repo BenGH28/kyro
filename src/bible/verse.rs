@@ -6,6 +6,15 @@ pub struct Verse {
     pub contents: String,
 }
 
+impl Verse {
+    pub fn new(vs_num: u32, content: &str) -> Self {
+        Self {
+            number: vs_num,
+            contents: content.to_string(),
+        }
+    }
+}
+
 impl fmt::Display for Verse {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[{}] {}", self.number, self.contents)
