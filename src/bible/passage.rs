@@ -1,15 +1,17 @@
+///TODO: remove &mut Self::Output as return value
+///NOTE: lifetimes may be important once iterators are a thing
 pub trait Navigate {
     type Output;
 
-    fn forward(&mut self) -> Option<&Self::Output>;
+    fn forward(&mut self) -> Option<&mut Self::Output>;
 
-    fn backward(&mut self) -> Option<&Self::Output>;
+    fn backward(&mut self) -> Option<&mut Self::Output>;
 
     //get the enclosed content (i.e. for book: book.get(Point{1,1}) -> returns chapter 1)
-    fn begin(&self) -> anyhow::Result<&Self::Output>;
+    fn begin(&mut self) -> anyhow::Result<&mut Self::Output>;
 
     // there may not be a specified end point by the user
-    fn end(&self) -> Option<&Self::Output>;
+    fn end(&mut self) -> Option<&mut Self::Output>;
 }
 
 #[derive(Clone, Copy, Debug)]

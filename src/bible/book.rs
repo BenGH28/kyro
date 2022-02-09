@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::convert::TryInto;
 use std::fmt;
 use std::vec::Vec;
 
@@ -8,7 +7,6 @@ use once_cell::sync::Lazy;
 use roxmltree::Node;
 
 use super::chapter::Chapter;
-use super::passage::{self, Point};
 
 use super::paragraph::Paragraph;
 use super::verse::Verse;
@@ -96,20 +94,12 @@ static BOOK_TITLE_ID: Lazy<HashMap<String, String>> = Lazy::new(|| {
 
 pub struct Book {
     pub title: String,
-    pub entry_point: Point,
-    pub end_point: Point,
-    pub next_point: Point,
-    pub prev_point: Point,
     pub chapters: Vec<Chapter>,
+    //TODO:rip this out and make its own data stuct look up iterators
 }
 
 impl Book {
-    pub fn new(
-        title: String,
-        entry_point: Point,
-        end_point: Point,
-        bible_doc: &roxmltree::Document,
-    ) -> anyhow::Result<Self> {
+    pub fn new(title: String, bible_doc: &roxmltree::Document) -> anyhow::Result<Self> {
         let title_id = BOOK_TITLE_ID
             .get(&title)
             .context(format!("{} is not book of the Bible", &title))?;
@@ -118,22 +108,8 @@ impl Book {
             .find(|node| node.has_tag_name(BOOK_TAG) && node.attribute(ID_TAG) == Some(title_id))
             .context(format!("cannot find the book of {}", &title))?;
 
-        let next_point = Point {
-            chpt: entry_point.chpt + 1,
-            verse: entry_point.verse,
-        };
-
-        let prev_point = Point {
-            chpt: entry_point.chpt - 1,
-            verse: entry_point.verse,
-        };
-
         let mut book_struct = Book {
             title,
-            entry_point,
-            next_point,
-            prev_point,
-            end_point,
             chapters: Vec::new(),
         };
         book_struct.make_chapters(full_book_node)?;
@@ -155,7 +131,6 @@ impl Book {
                 //make a chapter of the book and then start working on it
                 let chapter = Chapter {
                     number: num,
-                    entry_vs: self.entry_point.verse,
                     paragraphs: Vec::new(),
                 };
                 self.chapters.push(chapter);
@@ -213,106 +188,48 @@ impl fmt::Display for Book {
     }
 }
 
-impl passage::Navigate for Book {
-    type Output = Chapter;
-
-    fn forward(&mut self) -> Option<&Chapter> {
-        //return the next chapter in the book
-
-        //if the book has a next chapter to return then do so
-        let last_chpt: u32 = self.chapters.len().try_into().unwrap();
-        let ch = self
-            .chapters
-            .iter()
-            .find(|c| c.number == self.next_point.chpt);
-        if self.next_point.chpt < last_chpt {
-            self.next_point.chpt += 1;
-        }
-        ch
-    }
-
-    fn backward(&mut self) -> Option<&Chapter> {
-        let first_chpt = 1;
-        let ch = self
-            .chapters
-            .iter()
-            .find(|c| c.number == self.prev_point.chpt);
-        if self.prev_point.chpt > first_chpt {
-            self.prev_point.chpt -= 1;
-        }
-        ch
-    }
-
-    fn begin(&self) -> anyhow::Result<&Chapter> {
-        if !self.entry_point.is_empty() {
-            let result = self
-                .chapters
-                .iter()
-                .find(|c| c.number == self.entry_point.chpt)
-                .context(format!("could not find chapter {}", self.entry_point.chpt))?;
-            Ok(result)
-        } else {
-            Ok(&self.chapters[0])
-        }
-    }
-
-    fn end(&self) -> Option<&Chapter> {
-        if self.end_point.is_empty() {
-            None
-        } else {
-            self.chapters
-                .iter()
-                .find(|c| c.number == self.end_point.chpt)
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{bible_as_str, get_path_to_bible_file};
     use crate::{download_bible, Config};
-    //bring the trait in scope
-    use super::passage::*;
     use rstest::*;
 
     #[fixture]
     fn book_fixture() -> Book {
         download_bible(&Config::default()).unwrap();
         let bible_str = bible_as_str(get_path_to_bible_file(&Config::default()).unwrap()).unwrap();
-        let entry_point = Point::new(2, 2);
-        let end_point = Point::new(3, 3);
         let bible_doc = roxmltree::Document::parse(&bible_str).unwrap();
-        Book::new("Exodus".to_string(), entry_point, end_point, &bible_doc).unwrap()
+        Book::new("Exodus".to_string(), &bible_doc).unwrap()
     }
 
-    #[rstest]
-    fn end_book(book_fixture: Book) {
-        let expected_chpt_num = 3;
-        let ch = book_fixture.end().unwrap();
-        assert_eq!(ch.number, expected_chpt_num);
-    }
+    // #[rstest]
+    // fn end_book(mut book_fixture: Book) {
+    //     let expected_chpt_num = 3;
+    //     let ch = book_fixture.end().unwrap();
+    //     assert_eq!(ch.number, expected_chpt_num);
+    // }
 
-    #[rstest]
-    fn begin_book(book_fixture: Book) {
-        let expected_chpt_num = 2;
-        let ch = book_fixture.begin().unwrap();
-        assert_eq!(ch.number, expected_chpt_num);
-    }
+    // #[rstest]
+    // fn begin_book(mut book_fixture: Book) {
+    //     let expected_chpt_num = 2;
+    //     let ch = book_fixture.begin().unwrap();
+    //     assert_eq!(ch.number, expected_chpt_num);
+    // }
 
-    #[rstest]
-    fn forward_book(mut book_fixture: Book) {
-        let expected_chpt_num = 3;
-        let ch = book_fixture.forward().unwrap();
-        assert_eq!(ch.number, expected_chpt_num);
-    }
+    // #[rstest]
+    // fn forward_book(mut book_fixture: Book) {
+    //     let expected_chpt_num = 3;
+    //     let ch = book_fixture.forward().unwrap();
+    //     assert_eq!(ch.number, expected_chpt_num);
+    // }
 
-    #[rstest]
-    fn backward_book(mut book_fixture: Book) {
-        let expected_chpt_num = 1;
-        let ch = book_fixture.backward().unwrap();
-        assert_eq!(ch.number, expected_chpt_num);
-    }
+    // #[rstest]
+    // fn backward_book(mut book_fixture: Book) {
+    //     let expected_chpt_num = 1;
+    //     let ch = book_fixture.backward().unwrap();
+    //     assert_eq!(ch.number, expected_chpt_num);
+    // }
 
     #[rstest]
     fn new_book(book_fixture: Book) {
