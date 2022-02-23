@@ -1,4 +1,4 @@
-name: Rust
+name: Build
 
 on: [push, pull_request]
 
@@ -27,13 +27,3 @@ jobs:
 
       - name: Run tests
         run: cargo test
-
-      - name: Check format
-        run: |
-          rustup component add rustfmt
-          cargo fmt -- --check
-
-      - name: Clippy
-        run: |
-          rustup component add clippy
-          cargo clippy --all-targets
