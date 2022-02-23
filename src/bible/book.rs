@@ -20,6 +20,7 @@ const Q_PARA_TAG: &str = "q";
 const WORD_TAG: &str = "w";
 const ID_TAG: &str = "id";
 const NEW_LN: &str = "\n";
+const VERSE_TAG: &str = "v";
 
 static BOOK_TITLE_ID: Lazy<HashMap<String, String>> = Lazy::new(|| {
     let mut map = HashMap::new();
@@ -95,7 +96,6 @@ static BOOK_TITLE_ID: Lazy<HashMap<String, String>> = Lazy::new(|| {
 pub struct Book {
     pub title: String,
     pub chapters: Vec<Chapter>,
-    //TODO:rip this out and make its own data stuct look up iterators
 }
 
 impl Book {
@@ -117,12 +117,24 @@ impl Book {
         Ok(book_struct)
     }
 
+    fn is_content(v: &Node) -> bool {
+        v.has_tag_name(WORD_TAG) || v.is_text()
+    }
+    fn is_verse_tag(v: &Node) -> bool {
+        v.has_attribute(ID_TAG) && v.has_tag_name(VERSE_TAG)
+    }
+    fn is_chapter_tag(child: &Node) -> bool {
+        child.has_tag_name(CHPT_NUM_TAG)
+            || child.has_tag_name(ALT_CHPT_NUM_TAG_1)
+            || child.has_tag_name(ALT_CHPT_NUM_TAG_2)
+    }
+
+    fn is_paragraph_tag(child: &Node) -> bool {
+        child.has_tag_name(P_PARA_TAG) || child.has_tag_name(Q_PARA_TAG)
+    }
     fn make_chapters(&mut self, full_book: Node) -> anyhow::Result<()> {
         for child in full_book.children() {
-            if child.has_tag_name(CHPT_NUM_TAG)
-                || child.has_tag_name(ALT_CHPT_NUM_TAG_1)
-                || child.has_tag_name(ALT_CHPT_NUM_TAG_2)
-            {
+            if Book::is_chapter_tag(&child) {
                 let num = child
                     .attribute(ID_TAG)
                     .context("no ID tag on chapter")?
@@ -138,38 +150,49 @@ impl Book {
             }
 
             //find a paragraph node and we can start filling the chapter text
-            if child.has_tag_name(P_PARA_TAG) || child.has_tag_name(Q_PARA_TAG) {
-                // println!("trying to build a paragraph");
-                //the new paragraph to add to the chapter
-                let mut p = Paragraph { verses: Vec::new() };
+            if Book::is_paragraph_tag(&child) {
+                let mut pgh = Paragraph { verses: Vec::new() };
 
                 if child.has_children() {
-                    //make a verse to add to the paragraph later
-                    let mut verse = Verse::new(0, "");
+                    //making a verse here means the paragraph is 1 verse long and contains all of
+                    //the verses for that paragraph under the last verse of the paragraph
+
+                    //make a new verse when we come across a verse tag and add it to the paragraph
+                    //we append to the paragraph so we always update the last verse in the paragraph
+                    //NOTE: where the verse meta data is (vs_num and content)
                     for v in child.children() {
-                        // make sure to set the verse number
-                        if v.has_attribute(ID_TAG) {
-                            verse.number =
+                        if Book::is_verse_tag(&v) {
+                            let mut new_verse = Verse::new(0, "");
+                            new_verse.number =
                                 v.attribute(ID_TAG).context("no verse ID")?.parse::<u32>()?;
+                            pgh.verses.push(new_verse);
+                            continue;
                         }
 
-                        // start building the contenst of the verse with <w/> tags and text nodes
-                        // which follow the <w/> tags holding any punctuation for the grammar
-                        if v.has_tag_name(WORD_TAG) || v.is_text() {
-                            if let Some(t) = v.text() {
-                                //we don't want to add '\n' after each <w/> tag
-                                if t.contains(NEW_LN) {
-                                    verse.contents.push_str(&t.replace("\n", " "));
-                                } else {
-                                    verse.contents.push_str(t);
+                        if Book::is_content(&v) {
+                            //find the most recent verse
+                            let verse_opt = pgh.verses.last_mut();
+
+                            if let Some(most_recent_verse) = verse_opt {
+                                //start adding contents to the verse
+                                if let Some(t) = v.text() {
+                                    //we don't want to add '\n' after each <w/> tag
+                                    if t.contains(NEW_LN) {
+                                        most_recent_verse.contents.push_str(&t.replace("\n", " "));
+                                    } else {
+                                        most_recent_verse.contents.push_str(t);
+                                    }
                                 }
+                            } else {
+                                continue;
                             }
                         }
                     }
-                    p.verses.push(verse);
                 }
+
+                // dbg!(pgh.to_owned());
                 if let Some(c) = self.chapters.iter_mut().last() {
-                    c.paragraphs.push(p);
+                    c.paragraphs.push(pgh);
                 }
             }
         }
@@ -200,40 +223,13 @@ mod tests {
         download_bible(&Config::default()).unwrap();
         let bible_str = bible_as_str(get_path_to_bible_file(&Config::default()).unwrap()).unwrap();
         let bible_doc = roxmltree::Document::parse(&bible_str).unwrap();
-        Book::new("Exodus".to_string(), &bible_doc).unwrap()
+        Book::new("Genesis".to_string(), &bible_doc).unwrap()
     }
-
-    // #[rstest]
-    // fn end_book(mut book_fixture: Book) {
-    //     let expected_chpt_num = 3;
-    //     let ch = book_fixture.end().unwrap();
-    //     assert_eq!(ch.number, expected_chpt_num);
-    // }
-
-    // #[rstest]
-    // fn begin_book(mut book_fixture: Book) {
-    //     let expected_chpt_num = 2;
-    //     let ch = book_fixture.begin().unwrap();
-    //     assert_eq!(ch.number, expected_chpt_num);
-    // }
-
-    // #[rstest]
-    // fn forward_book(mut book_fixture: Book) {
-    //     let expected_chpt_num = 3;
-    //     let ch = book_fixture.forward().unwrap();
-    //     assert_eq!(ch.number, expected_chpt_num);
-    // }
-
-    // #[rstest]
-    // fn backward_book(mut book_fixture: Book) {
-    //     let expected_chpt_num = 1;
-    //     let ch = book_fixture.backward().unwrap();
-    //     assert_eq!(ch.number, expected_chpt_num);
-    // }
 
     #[rstest]
     fn new_book(book_fixture: Book) {
-        assert_ne!(book_fixture.chapters.len(), 0);
+        assert_eq!(book_fixture.chapters.len(), 50);
+
         for chpt in book_fixture.chapters {
             assert_ne!(chpt.paragraphs.len(), 0);
             for para in chpt.paragraphs {

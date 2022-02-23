@@ -1,44 +1,10 @@
-use crate::bible::book::Book;
-use crate::bible::chapter::Chapter;
-use crate::bible::passage::Point;
+use crate::bible::{book::Book, chapter::Chapter, passage::Point};
+use crate::Query;
 use crate::{bible_as_str, get_path_to_bible_file, Config};
 use anyhow::Context;
 use structopt::StructOpt;
 
-pub struct Query {
-    pub entry_point: Point,
-    pub end_point: Point,
-    pub vs_next: u32,
-    pub chpt_next: u32,
-}
-
-impl Query {
-    pub fn new(entry_point: Point, end_point: Point) -> Self {
-        Self {
-            entry_point,
-            end_point,
-            vs_next: 0,
-            chpt_next: 0,
-        }
-    }
-
-    pub fn next_chpt(&mut self) {
-        if self.chpt_next == 0 {
-            self.chpt_next = self.entry_point.chpt + 1;
-        } else {
-            self.chpt_next += 1;
-        }
-    }
-
-    pub fn next_vs(&mut self) {
-        if self.vs_next == 0 {
-            self.vs_next = self.entry_point.verse + 1;
-        } else {
-            self.vs_next += 1;
-        }
-    }
-}
-
+pub mod query;
 #[derive(StructOpt)]
 #[structopt(name = "kyro", about = "Read the Bible on the commandline")]
 pub enum Command {
@@ -58,7 +24,7 @@ impl Command {
                 chapter_verse,
             } => {
                 let mut book = setup_a_book(book_title.to_string(), config)?;
-                let mut query = setup_query(chapter_verse.to_string())?;
+                let mut query = Query::setup_query(chapter_verse.to_string())?;
                 Command::print_passage(&mut book, &mut query)
             }
             Command::Read {
@@ -66,10 +32,70 @@ impl Command {
                 chapter_verse,
             } => {
                 let book = setup_a_book(book_title.to_string(), config)?;
-                let query = setup_query(chapter_verse.to_string())?;
+                let query = Query::setup_query(chapter_verse.to_string())?;
                 Command::read_passage(book)
             }
             Command::Today => Command::today(),
+        }
+    }
+
+    fn find_pgh_idx(ch: &Chapter, verse_num: u32) -> Option<usize> {
+        for i in 0..ch.paragraphs.len() {
+            let opt = ch.paragraphs[i]
+                .verses
+                .iter()
+                .find(|v| v.number == verse_num);
+            if opt.is_some() {
+                return Some(i);
+            }
+        }
+        None
+    }
+
+    //HACK: the nesting is so gross...
+    fn print_first_chapter(ch: &Chapter, query: &Query) -> anyhow::Result<()> {
+        let start_vs = query.entry_point.verse;
+        let end_vs = query.end_point.verse;
+
+        let first_pgh_idx = Command::find_pgh_idx(ch, start_vs)
+            .context(format!("cannot find verse {} ", start_vs))?;
+        let last_pgh_idx_opt = Command::find_pgh_idx(ch, end_vs);
+
+        if query.is_range() {
+            let last_idx: usize;
+            //query doesn't span outside of the chapter
+            if query.is_internal_range() {
+                dbg!("internal");
+                if let Some(ending) = last_pgh_idx_opt {
+                    last_idx = ending;
+                    for i in first_pgh_idx..last_idx {
+                        println!("{}", ch.paragraphs[i]);
+                    }
+                }
+            } else {
+                //range spans multiple chapters
+                last_idx = ch.paragraphs.len();
+                for i in first_pgh_idx..last_idx {
+                    println!("{}", ch.paragraphs[i]);
+                }
+            }
+        } else {
+            //single verse queried
+            println!("{}", ch.paragraphs[first_pgh_idx]);
+        }
+        Ok(())
+    }
+
+    fn print_last_chapter(ch: &Chapter, query: &Query) {
+        //for the last chapter print from the beginning to the ending point
+        //filter the paragraphs so that we only get the ones upto and including the ending vs
+        let end_vs = query.end_point.verse;
+        let final_phgs_iter = ch.paragraphs.iter().filter(|p| {
+            let opt = p.verses.iter().find(|v| v.number <= end_vs);
+            opt.is_some()
+        });
+        for pgh in final_phgs_iter {
+            println!("{}", pgh);
         }
     }
 
@@ -78,15 +104,25 @@ impl Command {
         let start_chpt = query.entry_point.chpt;
         let end_chpt = query.end_point.chpt;
 
-        let start_vs = query.entry_point.verse;
-        let end_vs = query.end_point.verse;
+        let chapters_iter = book.chapters.iter().filter(|c| {
+            if end_chpt != 0 {
+                c.number >= start_chpt && c.number <= end_chpt
+            } else {
+                c.number == start_chpt
+            }
+        });
 
-        //PROBLEM: why wont this work?
-        //use an iterator over the chapters
-        let iter = book.chapters.iter().take_while(|c| c.number == start_chpt);
-        for c in iter {
-            println!("{}", c);
+        for ch in chapters_iter {
+            if ch.number == start_chpt {
+                Command::print_first_chapter(ch, query)?;
+            } else if ch.number < end_chpt {
+                //for all chapters in-between just print them to the screen
+                println!("{}", ch);
+            } else {
+                Command::print_last_chapter(ch, query);
+            }
         }
+
         Ok(())
     }
 
@@ -105,106 +141,4 @@ fn setup_a_book(book_title: String, config: &Config) -> anyhow::Result<Book> {
     let title = book_title;
     let book: Book = Book::new(title, &bible_doc)?;
     Ok(book)
-}
-
-fn setup_query(chapter_verse: String) -> anyhow::Result<Query> {
-    let (start_point, end_point) = split_cli_query(&chapter_verse)?;
-    let query = Query::new(start_point, end_point);
-    Ok(query)
-}
-
-fn get_query_start(start_vec: &[&str]) -> anyhow::Result<Point> {
-    let start_chpt = start_vec[0]
-        .parse::<u32>()
-        .context("starting chapter invalid")?;
-
-    let start_vs = start_vec[1]
-        .parse::<u32>()
-        .context("starting verse is invalid")?;
-
-    let start = Point {
-        chpt: start_chpt,
-        verse: start_vs,
-    };
-
-    Ok(start)
-}
-pub fn split_cli_query(chpt_vs_query: &str) -> anyhow::Result<(Point, Point)> {
-    let dash = '-';
-    let colon = ':';
-
-    // if the user just enters the book title and no chapter:verse then start them off at the
-    // beginning of the book
-    if chpt_vs_query.is_empty() {
-        return Ok((Point::new(1, 1), Point::new(0, 0)));
-    }
-
-    let split: Vec<&str> = chpt_vs_query.split(dash).collect();
-
-    let start_vec: Vec<&str> = split[0].split(colon).collect();
-    let start = get_query_start(&start_vec)?;
-
-    let end: Point;
-    if split.len() == 1 {
-        end = Point::new(0, 0);
-    } else {
-        //WARNING:this only exists if there is a dash
-        let end_vec: Vec<&str> = split[1].split(colon).collect();
-
-        let has_chpt = end_vec.len() == 2;
-        let end_chpt = if has_chpt {
-            end_vec[0]
-                .parse::<u32>()
-                .context("ending chapter is invalid")?
-        } else {
-            0
-        };
-
-        let end_vs = if has_chpt {
-            end_vec[1]
-                .parse::<u32>()
-                .context("ending verse is invalid")?
-        } else {
-            end_vec[0]
-                .parse::<u32>()
-                .context("ending verse is invalid")?
-        };
-
-        end = Point {
-            chpt: end_chpt,
-            verse: end_vs,
-        };
-    }
-
-    Ok((start, end))
-}
-
-#[cfg(test)]
-mod tests {
-    use rstest::{fixture, rstest};
-
-    use super::*;
-
-    #[fixture]
-    fn query_fixture() -> Query {
-        let start = Point::new(9, 3);
-        let end = Point::new(10, 8);
-        Query::new(start, end)
-    }
-
-    #[rstest]
-    fn query_next_chpt(mut query_fixture: Query) {
-        query_fixture.next_chpt();
-        let expected = 10;
-        let actual = query_fixture.chpt_next;
-        assert_eq!(expected, actual);
-    }
-
-    #[rstest]
-    fn query_next_vs(mut query_fixture: Query) {
-        query_fixture.next_vs();
-        let expected = 4;
-        let actual = query_fixture.vs_next;
-        assert_eq!(expected, actual);
-    }
 }

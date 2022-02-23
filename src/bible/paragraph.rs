@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::bible::verse::Verse;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Paragraph {
     pub verses: Vec<Verse>,
 }

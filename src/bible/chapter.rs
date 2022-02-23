@@ -83,14 +83,4 @@ mod tests {
 
         ch
     }
-
-    // #[rstest]
-    // fn begin_chapter(mut chapter_fixture: Chapter) {
-    //     let expected = Verse::new(4, "here is some content for v4 of paragraph 2");
-    //     let p = chapter_fixture.begin().unwrap();
-    //     let v = &p.verses[0];
-
-    //     assert_eq!(v.number, expected.number);
-    //     assert_eq!(v.contents, expected.contents);
-    // }
 }
