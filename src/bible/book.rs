@@ -178,7 +178,7 @@ impl Book {
                                 if let Some(t) = v.text() {
                                     //we don't want to add '\n' after each <w/> tag
                                     if t.contains(NEW_LN) {
-                                        most_recent_verse.contents.push_str(&t.replace("\n", " "));
+                                        most_recent_verse.contents.push_str(&t.replace('\n', " "));
                                     } else {
                                         most_recent_verse.contents.push_str(t);
                                     }

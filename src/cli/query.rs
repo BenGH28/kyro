@@ -58,14 +58,13 @@ impl Query {
             .parse::<u32>()
             .context("starting chapter invalid")?;
 
-        let start_vs: u32;
-        if start_vec.len() > 1 {
-            start_vs = start_vec[1]
+        let start_vs: u32 = if start_vec.len() > 1 {
+            start_vec[1]
                 .parse::<u32>()
-                .context("starting verse is invalid")?;
+                .context("starting verse is invalid")?
         } else {
-            start_vs = 1;
-        }
+            1
+        };
 
         let start = Point {
             chpt: start_chpt,
@@ -90,9 +89,9 @@ impl Query {
         let start_vec: Vec<&str> = split_on_dash[0].split(colon).collect();
         let start = Query::get_query_start(&start_vec)?;
 
-        let end: Point;
-        if split_on_dash.len() == 1 {
-            end = Point::new(0, 0);
+        let no_end_point_provided = split_on_dash.len() == 1;
+        let end: Point = if no_end_point_provided {
+            Point::new(0, 0)
         } else {
             //WARNING:this only exists if there is a dash
             let end_vec: Vec<&str> = split_on_dash[1].split(colon).collect();
@@ -116,11 +115,11 @@ impl Query {
                     .context("ending verse is invalid")?
             };
 
-            end = Point {
+            Point {
                 chpt: end_chpt,
                 verse: end_vs,
-            };
-        }
+            }
+        };
 
         Ok((start, end))
     }
