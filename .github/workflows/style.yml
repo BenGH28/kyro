@@ -1,0 +1,22 @@
+name: Style
+
+on: [push, pull_request]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check format
+        run: |
+          rustup component add rustfmt
+          cargo fmt -- --check
+
+      - name: Clippy
+        run: |
+          rustup component add clippy
+          cargo clippy --all-targets
