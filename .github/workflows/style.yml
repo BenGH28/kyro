@@ -1,3 +1,4 @@
+# vim: shiftwidth=2 tabstop=2
 name: Style
 
 on: [push, pull_request]
@@ -11,12 +12,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - uses: qernal/github-actions-rust-clippy@v1.4.0
       - name: Check format
         run: |
           rustup component add rustfmt
           cargo fmt -- --check
-
-      - name: Clippy
-        run: |
-          rustup component add clippy
-          cargo clippy --all-targets
