@@ -10,7 +10,7 @@ pub struct Chapter {
 
 impl fmt::Display for Chapter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "CHAPTER {}", self.number)?;
+        writeln!(f, "CHAPTER_{}", self.number)?;
         for p in &self.paragraphs {
             writeln!(f, "{}", p)?;
         }
@@ -34,7 +34,7 @@ mod tests {
         let mut p1 = Paragraph { verses: Vec::new() };
         let mut p2 = Paragraph { verses: Vec::new() };
 
-        let expected = "CHAPTER 11\n[34] \"Where have you put him?\" He asked. \"Come and see, Lord,\" they answered. [35] Jesus wept. \n[36] So the Jews said, \"See how he loved him!\" \n".to_string();
+        let expected = "CHAPTER_11\n[34] \"Where have you put him?\" He asked. \"Come and see, Lord,\" they answered. [35] Jesus wept. \n[36] So the Jews said, \"See how he loved him!\" \n".to_string();
 
         let j_1134 = Verse {
             number: 34,

@@ -1,17 +1,24 @@
-use crate::bible::{book::Book, chapter::Chapter, passage::Point};
+use std::io::{self, Write};
+
+use crate::bible::{book::Book, chapter::Chapter};
 use crate::Query;
 use crate::{bible_as_str, get_path_to_bible_file, Config};
 use anyhow::Context;
+use pager::Pager;
 use structopt::StructOpt;
 
 pub mod query;
+
 #[derive(StructOpt)]
 #[structopt(name = "kyro", about = "Read the Bible on the commandline")]
 pub enum Command {
     /// search for a passage and print to console
     Search { book: String, chapter_verse: String },
     /// start reading a passage of scripture in a buffer
-    Read { book: String, chapter_verse: String },
+    Read {
+        book: String,
+        chapter_verse: Option<String>,
+    },
     /// display the verse of the day
     Today,
 }
@@ -23,7 +30,7 @@ impl Command {
                 book: book_title,
                 chapter_verse,
             } => {
-                let mut book = setup_a_book(book_title.to_string(), config)?;
+                let mut book = Command::setup_a_book(book_title.to_string(), config)?;
                 let mut query = Query::setup_query(chapter_verse.to_string())?;
                 Command::print_passage(&mut book, &mut query)
             }
@@ -31,9 +38,13 @@ impl Command {
                 book: book_title,
                 chapter_verse,
             } => {
-                let book = setup_a_book(book_title.to_string(), config)?;
-                let query = Query::setup_query(chapter_verse.to_string())?;
-                Command::read_passage(book)
+                let book = Command::setup_a_book(book_title.to_string(), config)?;
+                if let Some(passage) = chapter_verse {
+                    let query = Query::setup_query(passage.to_string())?;
+                    Command::read_passage(&book, Some(&query))
+                } else {
+                    Command::read_passage(&book, None)
+                }
             }
             Command::Today => Command::today(),
         }
@@ -65,7 +76,6 @@ impl Command {
             let last_idx: usize;
             //query doesn't span outside of the chapter
             if query.is_internal_range() {
-                dbg!("internal");
                 if let Some(ending) = last_pgh_idx_opt {
                     last_idx = ending;
                     for i in first_pgh_idx..last_idx {
@@ -126,19 +136,42 @@ impl Command {
         Ok(())
     }
 
-    fn read_passage(book: Book) -> anyhow::Result<()> {
-        todo!()
+    fn paginate(book: &Book, less_cmd: &str) -> anyhow::Result<()> {
+        Pager::with_pager(less_cmd).setup();
+
+        let out: Vec<String> = book.chapters.iter().map(ToString::to_string).collect();
+        let result = io::stdout().write_all(out.join("\n").as_bytes());
+
+        //HACK: pipes can break when the user quits the pager before reading the entire Book so
+        //don't panic please
+        if result.is_ok() {
+            return Ok(());
+        }
+        Ok(())
+    }
+
+    fn read_passage(book: &Book, query_opt: Option<&Query>) -> anyhow::Result<()> {
+        match query_opt {
+            Some(query) => {
+                let less_cmd = format!("less -p ^CHAPTER_{}$", query.entry_point.chpt);
+                Ok(Command::paginate(book, &less_cmd)?)
+            }
+            None => {
+                let less_cmd = "less";
+                Ok(Command::paginate(book, less_cmd)?)
+            }
+        }
     }
 
     fn today() -> anyhow::Result<()> {
         todo!()
     }
-}
 
-fn setup_a_book(book_title: String, config: &Config) -> anyhow::Result<Book> {
-    let bible_str = bible_as_str(get_path_to_bible_file(config)?)?;
-    let bible_doc = roxmltree::Document::parse(&bible_str)?;
-    let title = book_title;
-    let book: Book = Book::new(title, &bible_doc)?;
-    Ok(book)
+    fn setup_a_book(book_title: String, config: &Config) -> anyhow::Result<Book> {
+        let bible_str = bible_as_str(get_path_to_bible_file(config)?)?;
+        let bible_doc = roxmltree::Document::parse(&bible_str)?;
+        let title = book_title;
+        let book: Book = Book::new(title, &bible_doc)?;
+        Ok(book)
+    }
 }
