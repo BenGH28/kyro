@@ -17,7 +17,8 @@ impl Verse {
 
 impl fmt::Display for Verse {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "[{}] {}", self.number, self.contents)
+        let v = format!("[{}] {}", self.number, self.contents);
+        write!(f, "{}", v)
     }
 }
 
