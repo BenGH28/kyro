@@ -74,8 +74,11 @@ impl Command {
         let start_vs = query.entry_point.verse;
         let end_vs = query.end_point.verse;
 
+        //the paragraph that contains the starting verse
         let first_pgh_idx = Command::find_pgh_idx(ch, start_vs)
             .context(format!("cannot find verse {} ", start_vs))?;
+        // option for the last paragraph of the query - only Some if the query is within a single
+        // chapter
         let last_pgh_idx_opt = Command::find_pgh_idx(ch, end_vs);
 
         if query.is_range() {
@@ -84,8 +87,14 @@ impl Command {
             if query.is_internal_range() {
                 if let Some(ending) = last_pgh_idx_opt {
                     last_idx = ending;
-                    for i in first_pgh_idx..last_idx {
-                        println!("{}", ch.paragraphs[i]);
+
+                    if last_idx == first_pgh_idx {
+                        println!("{}", ch.paragraphs[first_pgh_idx]);
+                    } else {
+                        // be carefull both idx's aren't the same
+                        for i in first_pgh_idx..last_idx {
+                            println!("{}", ch.paragraphs[i]);
+                        }
                     }
                 }
             } else {
@@ -97,7 +106,13 @@ impl Command {
             }
         } else {
             //single verse queried
-            println!("{}", ch.paragraphs[first_pgh_idx]);
+            let pgh: &Paragraph = &ch.paragraphs[first_pgh_idx];
+            let vs: &Verse = pgh
+                .verses
+                .iter()
+                .find(|v| v.number == start_vs)
+                .expect("cannot find the desired verse");
+            println!("{}", vs);
         }
         Ok(())
     }
@@ -208,5 +223,20 @@ impl Command {
         let title = book_title;
         let book: Book = Book::new(title, &bible_doc)?;
         Ok(book)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[ignore]
+    fn test_run() {
+        let cmd = Command::Search {
+            book: "John".to_string(),
+            chapter_verse: "3:16".to_string(),
+        };
+        cmd.run(&Config::default()).unwrap();
     }
 }
