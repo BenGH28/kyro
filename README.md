@@ -1,6 +1,6 @@
 # WIP: ☧ kyro - the Bible on the command line
 
-- Currently, a work in progress while I look for work. THERE WILL BE BUGS.
+- I'm using this project as an excuse to learn Rust so bear with me...THERE WILL BE BUGS.
 - The listed commands below are planned to be implemented
 
 
