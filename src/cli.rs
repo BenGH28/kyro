@@ -1,9 +1,15 @@
+use rand::prelude::*;
+use rand_chacha::ChaCha8Rng;
 use std::io::{self, Write};
 
+use crate::bible::book::BOOK_ORDER;
+use crate::bible::paragraph::Paragraph;
+use crate::bible::verse::Verse;
 use crate::bible::{book::Book, chapter::Chapter};
 use crate::Query;
 use crate::{bible_as_str, get_path_to_bible_file, Config};
 use anyhow::Context;
+use chrono::{Datelike, Local};
 use pager::Pager;
 use structopt::StructOpt;
 
@@ -46,7 +52,7 @@ impl Command {
                     Command::read_passage(&book, None)
                 }
             }
-            Command::Today => Command::today(),
+            Command::Today => Command::today(config),
         }
     }
 
@@ -163,8 +169,37 @@ impl Command {
         }
     }
 
-    fn today() -> anyhow::Result<()> {
-        todo!()
+    fn today(config: &Config) -> anyhow::Result<()> {
+        let now = Local::now();
+        let naive = now.naive_local();
+        let year = naive.year() as u32;
+        let month = naive.month();
+        let day = naive.day();
+
+        let seed: u64 = (year + month + day).into();
+        let num_books = 66;
+
+        let mut rng = ChaCha8Rng::seed_from_u64(seed);
+        let book_num = rng.gen_range(1..num_books);
+
+        let book_title: String = BOOK_ORDER
+            .get(&book_num)
+            .expect("book selected doesn't exist")
+            .to_string();
+        let book = Command::setup_a_book(book_title, config)?;
+
+        let chpt_num = rng.gen_range(1..book.chapters.len());
+        let chpt: &Chapter = &book.chapters[chpt_num];
+
+        let pgh_num = rng.gen_range(1..chpt.paragraphs.len());
+        let pgh: &Paragraph = &chpt.paragraphs[pgh_num];
+
+        let vs_num = rng.gen_range(1..pgh.verses.len());
+        let vs: &Verse = &pgh.verses[vs_num];
+
+        println!("{} {}:{}\n{}", book.title, chpt.number, vs.number, vs);
+
+        Ok(())
     }
 
     fn setup_a_book(book_title: String, config: &Config) -> anyhow::Result<Book> {

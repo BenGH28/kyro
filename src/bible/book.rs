@@ -22,8 +22,81 @@ const ID_TAG: &str = "id";
 const NEW_LN: &str = "\n";
 const VERSE_TAG: &str = "v";
 
-static BOOK_TITLE_ID: Lazy<HashMap<String, String>> = Lazy::new(|| {
+pub static BOOK_ORDER: Lazy<HashMap<u32, String>> = Lazy::new(|| {
     let mut map = HashMap::new();
+
+    map.insert(1, "Genesis".to_string());
+    map.insert(2, "Exodus".to_string());
+    map.insert(3, "Leviticus".to_string());
+    map.insert(4, "Numbers".to_string());
+    map.insert(5, "Deuteronomy".to_string());
+    map.insert(6, "Joshua".to_string());
+    map.insert(7, "Judges".to_string());
+    map.insert(8, "Ruth".to_string());
+    map.insert(9, "1 Samuel".to_string());
+    map.insert(10, "2 Samuel".to_string());
+    map.insert(11, "1 Kings".to_string());
+    map.insert(12, "2 Kings".to_string());
+    map.insert(13, "1 Chronicles".to_string());
+    map.insert(14, "2 Chronicles".to_string());
+    map.insert(15, "Ezra".to_string());
+    map.insert(16, "Nehemiah".to_string());
+    map.insert(17, "Esther".to_string());
+    map.insert(18, "Job".to_string());
+    map.insert(19, "Psalms".to_string());
+    map.insert(20, "Proverbs".to_string());
+    map.insert(21, "Ecclesiastes".to_string());
+    map.insert(22, "Song of Solomon".to_string());
+    map.insert(23, "Isaiah".to_string());
+    map.insert(24, "Jeremiah".to_string());
+    map.insert(25, "Lamentations".to_string());
+    map.insert(26, "Ezekiel".to_string());
+    map.insert(27, "Daniel".to_string());
+    map.insert(28, "Hosea".to_string());
+    map.insert(29, "Joel".to_string());
+    map.insert(30, "Amos".to_string());
+    map.insert(31, "Obadiah".to_string());
+    map.insert(32, "Jonah".to_string());
+    map.insert(33, "Micah".to_string());
+    map.insert(34, "Nahum".to_string());
+    map.insert(35, "Habakkuk".to_string());
+    map.insert(36, "Zephaniah".to_string());
+    map.insert(37, "Haggai".to_string());
+    map.insert(38, "Zechariah".to_string());
+    map.insert(39, "Malachi".to_string());
+    map.insert(40, "Matthew".to_string());
+    map.insert(41, "Mark".to_string());
+    map.insert(42, "Luke".to_string());
+    map.insert(43, "John".to_string());
+    map.insert(44, "Acts".to_string());
+    map.insert(45, "Romans".to_string());
+    map.insert(46, "1 Corinthians".to_string());
+    map.insert(47, "2 Corinthians".to_string());
+    map.insert(48, "Galations".to_string());
+    map.insert(49, "Ephesians".to_string());
+    map.insert(50, "Philippians".to_string());
+    map.insert(51, "Colossians".to_string());
+    map.insert(52, "1 Thessalonians".to_string());
+    map.insert(53, "2 Thessalonians".to_string());
+    map.insert(54, "1 Timothy".to_string());
+    map.insert(55, "2 Timothy".to_string());
+    map.insert(56, "Titus".to_string());
+    map.insert(57, "Philemon".to_string());
+    map.insert(58, "Hebrews".to_string());
+    map.insert(59, "James".to_string());
+    map.insert(60, "1 Peter".to_string());
+    map.insert(61, "2 Peter".to_string());
+    map.insert(62, "1 John".to_string());
+    map.insert(63, "2 John".to_string());
+    map.insert(64, "3 John".to_string());
+    map.insert(65, "Jude".to_string());
+    map.insert(66, "Revelation".to_string());
+    map
+});
+
+pub static BOOK_TITLE_ID: Lazy<HashMap<String, String>> = Lazy::new(|| {
+    let mut map = HashMap::new();
+
     map.insert("Genesis".to_string(), "GEN".to_string());
     map.insert("Exodus".to_string(), "EXO".to_string());
     map.insert("Leviticus".to_string(), "LEV".to_string());
