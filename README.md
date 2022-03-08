@@ -22,26 +22,26 @@ sudo pacman -S less
 
 ## Commands
 
--   Help
+####  Help
 
-```list
+```sh
 kyro help
 ```
 
--   List available Bibles
+####  List available Bibles
 
 ```sh
 kyro bibles
 ```
 
-- Search for a passage of scripture
+#### Search for a passage of scripture
 
 ```sh
 # search for a range of verses
 kyro search John 3:16-18
 ```
 
-- Read a book of the Bible with `less`
+#### Read a book of the Bible with `less`
 ```sh
 # read a book of the Bible starting from the beginning
 kyro read John
@@ -50,9 +50,9 @@ kyro read John
 kyro read John 3
 ```
 
-- Verse of the day
+#### Verse of the day
 
-```
+```sh
 kyro today
 ```
 
