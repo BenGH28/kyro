@@ -12,6 +12,9 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 confy = "0.4.0"
+rand = "0.8.5"
+rand_chacha = "0.3.1"
+chrono = "0.4.19"
 serde = {version ="1.0", features = ["derive"]}
 reqwest = {version = "0.11", features = ["blocking"]}
 directories-next = "2.0.0"

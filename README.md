@@ -1,6 +1,6 @@
 # WIP: ☧ kyro - the Bible on the command line
 
-- Currently, a work in progress while I look for work. THERE WILL BE BUGS.
+- I'm using this project as an excuse to learn Rust so bear with me...THERE WILL BE BUGS.
 - The listed commands below are planned to be implemented
 
 
@@ -22,26 +22,26 @@ sudo pacman -S less
 
 ## Commands
 
--   Help
+####  Help
 
-```list
+```sh
 kyro help
 ```
 
--   List available Bibles
+####  List available Bibles
 
 ```sh
 kyro bibles
 ```
 
-- Search for a passage of scripture
+#### Search for a passage of scripture
 
 ```sh
 # search for a range of verses
 kyro search John 3:16-18
 ```
 
-- Read a book of the Bible with `less`
+#### Read a book of the Bible with `less`
 ```sh
 # read a book of the Bible starting from the beginning
 kyro read John
@@ -50,18 +50,18 @@ kyro read John
 kyro read John 3
 ```
 
-- Verse of the day
+#### Verse of the day
 
-```
+```sh
 kyro today
 ```
 
-## Todo
+## To-do
 - [x] Help
 - [x] Search for passage within a chapter
 - [x] Search for multi-chapter passage
 - [x] Read command
-- [ ] Today command
+- [x] Today command
 - [ ] Format output text for easier reading - checkout [ ttf_word_wrap ]( https://docs.rs/ttf_word_wrap/0.5.0/ttf_word_wrap/index.html )
 - [ ] support multiple languages - just English so far but I'd like to add more
 - [ ] Listing Bibles - just NET so far but with more languages there could be more
