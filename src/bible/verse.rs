@@ -1,5 +1,7 @@
 use std::fmt;
 
+use textwrap::{fill, wrap_algorithms::Penalties, Options, WrapAlgorithm};
+
 #[derive(Clone, Debug)]
 pub struct Verse {
     pub number: u32,
@@ -18,7 +20,8 @@ impl Verse {
 impl fmt::Display for Verse {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let v = format!("[{}] {}", self.number, self.contents);
-        write!(f, "{}", v)
+        let opts = Options::new(80).wrap_algorithm(WrapAlgorithm::OptimalFit(Penalties::new()));
+        write!(f, "{}", fill(&v, opts))
     }
 }
 

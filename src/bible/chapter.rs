@@ -12,7 +12,7 @@ impl fmt::Display for Chapter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "CHAPTER_{}", self.number)?;
         for p in &self.paragraphs {
-            writeln!(f, "{}", p)?;
+            writeln!(f, "{}\n", p)?;
         }
         Ok(())
     }
