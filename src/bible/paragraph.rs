@@ -1,4 +1,6 @@
 use std::fmt;
+use std::fmt::Write as FmtWrite;
+use textwrap::{fill, wrap_algorithms::Penalties, Options, WrapAlgorithm};
 
 use crate::bible::verse::Verse;
 
@@ -9,10 +11,14 @@ pub struct Paragraph {
 
 impl fmt::Display for Paragraph {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut all_vs = String::new();
         for v in &self.verses {
-            write!(f, "{} ", v)?;
+            write!(&mut all_vs, "[{}] {} ", v.number, v.contents)?;
         }
-        Ok(())
+
+        //thanks Steve!!
+        let opts = Options::new(80).wrap_algorithm(WrapAlgorithm::OptimalFit(Penalties::new()));
+        write!(f, "{}", fill(&all_vs, opts))
     }
 }
 

@@ -117,7 +117,7 @@ pub fn print_passage(book: &mut Book, query: &mut Query) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn paginate(book: &Book, less_cmd: &str) -> anyhow::Result<()> {
+fn paginate(book: &Book, less_cmd: &str) -> anyhow::Result<()> {
     Pager::with_pager(less_cmd).setup();
 
     let out: Vec<String> = book.chapters.iter().map(ToString::to_string).collect();
@@ -125,7 +125,7 @@ pub fn paginate(book: &Book, less_cmd: &str) -> anyhow::Result<()> {
 
     //HACK: pipes can break when the user quits the pager before reading the entire Book so
     //don't panic please
-    if result.is_ok() {
+    if result.is_err() {
         return Ok(());
     }
     Ok(())
@@ -144,29 +144,35 @@ pub fn read_passage(book: &Book, query_opt: Option<&Query>) -> anyhow::Result<()
     }
 }
 
-pub fn num_gen(rng: &mut ChaCha8Rng, end_of_range: usize) -> usize {
-    rng.gen_range(1..end_of_range)
+fn num_gen(rng: &mut ChaCha8Rng, end_of_range: usize) -> usize {
+    rng.gen_range(0..end_of_range)
 }
-pub fn today(config: &Config) -> anyhow::Result<()> {
+
+fn gen_seed_from_date() -> u64 {
     let now = Local::now();
     let naive = now.naive_local();
     let year = naive.year() as u32;
     let month = naive.month();
     let day = naive.day();
 
-    let seed: u64 = (year + month + day).into();
+    (year + month + day).into()
+}
+
+pub fn today(config: &Config) -> anyhow::Result<()> {
     let num_books = 66_usize;
 
-    let mut rng = ChaCha8Rng::seed_from_u64(seed);
+    let mut rng = ChaCha8Rng::seed_from_u64(gen_seed_from_date());
     let book_num = num_gen(&mut rng, num_books) as u32;
 
     let book_title: String = BOOK_ORDER
         .get(&book_num)
         .expect("book selected doesn't exist")
         .to_string();
+
     let book = setup_a_book(book_title, config)?;
 
     let chpt_num = num_gen(&mut rng, book.chapters.len());
+
     let chpt: &Chapter = &book.chapters[chpt_num];
 
     let pgh_num = num_gen(&mut rng, chpt.paragraphs.len());
