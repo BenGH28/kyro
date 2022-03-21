@@ -169,25 +169,18 @@ fn generate_verse_of_day(
         .get(&book_num)
         .expect("book selected doesn't exist")
         .to_string();
-    dbg!(&book_title);
 
     let book = setup_a_book(book_title, config)?;
 
     let chpt_num = num_gen(rng, book.chapters.len());
-    dbg!(chpt_num);
 
     let chpt: &Chapter = &book.chapters[chpt_num];
-    dbg!(chpt.number);
 
     let pgh_num = num_gen(rng, chpt.paragraphs.len());
-    dbg!(pgh_num);
     let pgh: &Paragraph = &chpt.paragraphs[pgh_num];
-    dbg!(&pgh);
 
     let vs_num = num_gen(rng, pgh.verses.len());
-    dbg!(vs_num);
     let vs: &Verse = &pgh.verses[vs_num];
-    dbg!(vs.number);
 
     Ok((book.title, chpt.number, vs.number, vs.to_owned()))
 }
