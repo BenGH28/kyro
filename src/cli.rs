@@ -5,6 +5,8 @@ use crate::Config;
 use crate::Query;
 use structopt::StructOpt;
 
+use self::show::gen_seed_from_date;
+
 #[derive(StructOpt)]
 #[structopt(name = "kyro", about = "Read the Bible on the commandline")]
 pub enum Command {
@@ -42,7 +44,7 @@ impl Command {
                     show::read_passage(&book, None)
                 }
             }
-            Command::Today => show::today(config),
+            Command::Today => show::today(config, gen_seed_from_date()),
         }
     }
 }

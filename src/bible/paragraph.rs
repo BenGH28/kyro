@@ -1,6 +1,6 @@
 use std::fmt;
 use std::fmt::Write as FmtWrite;
-use textwrap::{fill, wrap_algorithms::Penalties, Options, WrapAlgorithm};
+use textwrap::{fill, termwidth, wrap_algorithms::Penalties, Options, WrapAlgorithm};
 
 use crate::bible::verse::Verse;
 
@@ -17,7 +17,8 @@ impl fmt::Display for Paragraph {
         }
 
         //thanks Steve!!
-        let opts = Options::new(80).wrap_algorithm(WrapAlgorithm::OptimalFit(Penalties::new()));
+        let opts =
+            Options::new(termwidth()).wrap_algorithm(WrapAlgorithm::OptimalFit(Penalties::new()));
         write!(f, "{}", fill(&all_vs, opts))
     }
 }
@@ -30,7 +31,7 @@ mod tests {
     fn display_paragraph() {
         let mut p = Paragraph { verses: Vec::new() };
 
-        let expected = r#"[34] "Where have you put him?" He asked. "Come and see, Lord," they answered. [35] Jesus wept. "#.to_string();
+        let expected = r#"[34] "Where have you put him?" He asked. "Come and see, Lord," they answered. [35] Jesus wept."#.to_string();
 
         let j_1134 = Verse {
             number: 34,

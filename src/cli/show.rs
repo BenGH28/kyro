@@ -148,7 +148,7 @@ fn num_gen(rng: &mut ChaCha8Rng, end_of_range: usize) -> usize {
     rng.gen_range(0..end_of_range)
 }
 
-fn gen_seed_from_date() -> u64 {
+pub fn gen_seed_from_date() -> u64 {
     let now = Local::now();
     let naive = now.naive_local();
     let year = naive.year() as u32;
@@ -158,31 +158,44 @@ fn gen_seed_from_date() -> u64 {
     (year + month + day).into()
 }
 
-pub fn today(config: &Config) -> anyhow::Result<()> {
+fn generate_verse_of_day(
+    config: &Config,
+    rng: &mut ChaCha8Rng,
+) -> anyhow::Result<(String, u32, u32, Verse)> {
     let num_books = 66_usize;
-
-    let mut rng = ChaCha8Rng::seed_from_u64(gen_seed_from_date());
-    let book_num = num_gen(&mut rng, num_books) as u32;
+    let book_num = num_gen(rng, num_books) as u32;
 
     let book_title: String = BOOK_ORDER
         .get(&book_num)
         .expect("book selected doesn't exist")
         .to_string();
+    dbg!(&book_title);
 
     let book = setup_a_book(book_title, config)?;
 
-    let chpt_num = num_gen(&mut rng, book.chapters.len());
+    let chpt_num = num_gen(rng, book.chapters.len());
+    dbg!(chpt_num);
 
     let chpt: &Chapter = &book.chapters[chpt_num];
+    dbg!(chpt.number);
 
-    let pgh_num = num_gen(&mut rng, chpt.paragraphs.len());
+    let pgh_num = num_gen(rng, chpt.paragraphs.len());
+    dbg!(pgh_num);
     let pgh: &Paragraph = &chpt.paragraphs[pgh_num];
+    dbg!(&pgh);
 
-    let vs_num = num_gen(&mut rng, pgh.verses.len());
+    let vs_num = num_gen(rng, pgh.verses.len());
+    dbg!(vs_num);
     let vs: &Verse = &pgh.verses[vs_num];
+    dbg!(vs.number);
 
-    println!("{} {}:{}\n{}", book.title, chpt.number, vs.number, vs);
+    Ok((book.title, chpt.number, vs.number, vs.to_owned()))
+}
 
+pub fn today(config: &Config, seed: u64) -> anyhow::Result<()> {
+    let mut rng = ChaCha8Rng::seed_from_u64(seed);
+    let (title, chpter_num, vs_num, vs) = generate_verse_of_day(config, &mut rng)?;
+    println!("{} {}:{}\n{}", title, chpter_num, vs_num, vs);
     Ok(())
 }
 
@@ -192,4 +205,29 @@ pub fn setup_a_book(book_title: String, config: &Config) -> anyhow::Result<Book>
     let title = book_title;
     let book: Book = Book::new(title, &bible_doc)?;
     Ok(book)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::config::Config;
+
+    use super::*;
+
+    #[test]
+    #[ignore]
+    fn today_gen_test() {
+        let config = Config::default();
+
+        let year = 2022;
+        let month = 3;
+        for day in 1..31 {
+            let seed = year + month + day;
+            let mut rng = ChaCha8Rng::seed_from_u64(seed);
+            let (_title, chpter_num, vs_num, vs) = generate_verse_of_day(&config, &mut rng)
+                .unwrap_or_else(|_| panic!("error on day {}", day));
+            assert!(chpter_num >= 1);
+            assert!(vs_num >= 1);
+            assert!(!vs.contents.is_empty());
+        }
+    }
 }
