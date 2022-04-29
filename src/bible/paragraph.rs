@@ -31,7 +31,10 @@ mod tests {
     fn display_paragraph() {
         let mut p = Paragraph { verses: Vec::new() };
 
-        let expected = r#"[34] "Where have you put him?" He asked. "Come and see, Lord," they answered. [35] Jesus wept."#.to_string();
+        let opts =
+            Options::new(termwidth()).wrap_algorithm(WrapAlgorithm::OptimalFit(Penalties::new()));
+        let mut expected = r#"[34] "Where have you put him?" He asked. "Come and see, Lord," they answered. [35] Jesus wept."#.to_string();
+        expected = fill(&expected, opts);
 
         let j_1134 = Verse {
             number: 34,
@@ -45,6 +48,8 @@ mod tests {
         p.verses.push(j_1134);
         p.verses.push(j_1135);
 
-        assert_eq!(format!("{}", p), expected);
+        let result = format!("{}", p);
+
+        assert_eq!(result, expected);
     }
 }

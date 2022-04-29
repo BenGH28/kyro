@@ -23,6 +23,7 @@ mod tests {
     use super::*;
     use crate::bible::verse::Verse;
     use rstest::*;
+    use textwrap::{fill, termwidth, wrap_algorithms::Penalties, Options, WrapAlgorithm};
 
     #[test]
     fn display_chapter() {
@@ -34,8 +35,11 @@ mod tests {
         let mut p1 = Paragraph { verses: Vec::new() };
         let mut p2 = Paragraph { verses: Vec::new() };
 
-        let expected = "CHAPTER_11\n[34] \"Where have you put him?\" He asked. \"Come and see, Lord,\" they answered. [35] Jesus wept.\n\n[36] So the Jews said, \"See how he loved him!\"\n\n".to_string();
+        let opts =
+            Options::new(termwidth()).wrap_algorithm(WrapAlgorithm::OptimalFit(Penalties::new()));
+        let mut expected = "CHAPTER_11\n[34] \"Where have you put him?\" He asked. \"Come and see, Lord,\" they answered. [35] Jesus wept.\n\n[36] So the Jews said, \"See how he loved him!\"\n\n".to_string();
 
+        expected = fill(&expected, opts);
         let j_1134 = Verse {
             number: 34,
             contents: r#""Where have you put him?" He asked. "Come and see, Lord," they answered."#
@@ -60,7 +64,8 @@ mod tests {
         chpt.paragraphs.push(p1);
         chpt.paragraphs.push(p2);
 
-        assert_eq!(format!("{}", chpt), expected);
+        let result = format!("{}", chpt);
+        assert_eq!(result, expected);
     }
 
     #[fixture]
