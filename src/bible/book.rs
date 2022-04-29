@@ -193,9 +193,11 @@ impl Book {
     fn is_content(v: &Node) -> bool {
         v.has_tag_name(WORD_TAG) || v.is_text()
     }
+
     fn is_verse_tag(v: &Node) -> bool {
         v.has_attribute(ID_TAG) && v.has_tag_name(VERSE_TAG)
     }
+
     fn is_chapter_tag(child: &Node) -> bool {
         child.has_tag_name(CHPT_NUM_TAG)
             || child.has_tag_name(ALT_CHPT_NUM_TAG_1)
@@ -205,6 +207,7 @@ impl Book {
     fn is_paragraph_tag(child: &Node) -> bool {
         child.has_tag_name(P_PARA_TAG) || child.has_tag_name(Q_PARA_TAG)
     }
+
     fn make_chapters(&mut self, full_book: Node) -> anyhow::Result<()> {
         for child in full_book.children() {
             if Book::is_chapter_tag(&child) {
@@ -234,14 +237,23 @@ impl Book {
                     //we append to the paragraph so we always update the last verse in the paragraph
                     //NOTE: where the verse meta data is (vs_num and content)
                     for v in child.children() {
+                        //normal situation where a paragraph starts and ends with a verse
+                        //WARN: this will not catch the verses spread across multiple paragraphs
                         if Book::is_verse_tag(&v) {
+                            //this is a problem for some books of the bible since some paragraphs start halfway through the verse
                             let mut new_verse = Verse::new(0, "");
                             new_verse.number =
                                 v.attribute(ID_TAG).context("no verse ID")?.parse::<u32>()?;
                             pgh.verses.push(new_verse);
                             continue;
                         }
+                        //we need to catch the case where a paragraph starts partway through a verse.
+                        //we have a new paragraph that continues on from the previous verse
+                        //find the last verse and in the previous paragraph and add the
+                        //remaining content to a new paragraph
 
+                        //HACK: the accursed nesting
+                        //add the content to the verses we just created
                         if Book::is_content(&v) {
                             //find the most recent verse
                             let verse_opt = pgh.verses.last_mut();
@@ -257,7 +269,26 @@ impl Book {
                                     }
                                 }
                             } else {
-                                continue;
+                                //if we have no recent verse then that means we have a paragraph
+                                //starting in the middle of an already existing verse
+                                //get the last paragraph created and get its last verse
+                                if let Some(c) = self.chapters.last_mut() {
+                                    if let Some(p) = c.paragraphs.last_mut() {
+                                        if let Some(vrs) = p.verses.last_mut() {
+                                            let last_vs_num = vrs.number;
+                                            let vs_remainder: &str = &v
+                                                .text()
+                                                .unwrap_or_else(|| {
+                                                    panic!(
+                                                        "there is no text to add to verse {}",
+                                                        last_vs_num
+                                                    )
+                                                })
+                                                .replace('\n', " ");
+                                            vrs.contents += vs_remainder;
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
