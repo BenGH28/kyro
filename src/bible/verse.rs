@@ -19,7 +19,11 @@ impl Verse {
 
 impl fmt::Display for Verse {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let v = format!("[{}] {}", self.number, self.contents);
+        let v: String = if self.number == 0 {
+            self.contents.to_string()
+        } else {
+            format!("[{}] {}", self.number, self.contents)
+        };
         let opts =
             Options::new(termwidth()).wrap_algorithm(WrapAlgorithm::OptimalFit(Penalties::new()));
         write!(f, "{}", fill(&v, opts))
@@ -37,5 +41,11 @@ mod tests {
             contents: "Jesus wept.".to_string(),
         };
         assert_eq!(format!("{}", v), "[35] Jesus wept.");
+
+        let v2 = Verse {
+            number: 0,
+            contents: "Because you have done this".to_string(),
+        };
+        assert_eq!(format!("{}", v2), "Because you have done this");
     }
 }

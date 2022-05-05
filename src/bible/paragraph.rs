@@ -1,19 +1,56 @@
-use std::fmt;
 use std::fmt::Write as FmtWrite;
+use std::{any::Any, fmt};
 use textwrap::{fill, termwidth, wrap_algorithms::Penalties, Options, WrapAlgorithm};
 
 use crate::bible::verse::Verse;
+
+// pub trait Ptype {
+//     fn as_any(&self) -> &dyn Any;
+// }
+
+// #[derive(Debug, Clone)]
+// pub struct Quote {
+//     pub verses: Vec<Verse>,
+// }
+
+// impl Ptype for Quote {
+//     fn as_any(&self) -> &dyn Any {
+//         self
+//     }
+// }
+
+// impl fmt::Display for Quote {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         let mut all_vs = String::new();
+//         for v in &self.verses {
+//             write!(&mut all_vs, "\t{} ", v.contents)?;
+//         }
+
+//         let opts =
+//             Options::new(termwidth()).wrap_algorithm(WrapAlgorithm::OptimalFit(Penalties::new()));
+//         write!(f, "{}", fill(&all_vs, opts))
+//     }
+// }
 
 #[derive(Debug, Clone)]
 pub struct Paragraph {
     pub verses: Vec<Verse>,
 }
 
+// impl Ptype for Paragraph {
+//     fn as_any(&self) -> &dyn Any {
+//         self
+//     }
+// }
 impl fmt::Display for Paragraph {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut all_vs = String::new();
         for v in &self.verses {
-            write!(&mut all_vs, "[{}] {} ", v.number, v.contents)?;
+            if v.number == 0 {
+                write!(&mut all_vs, "\t{} ", v.contents)?;
+            } else {
+                write!(&mut all_vs, "[{}] {} ", v.number, v.contents)?;
+            }
         }
 
         //thanks Steve!!

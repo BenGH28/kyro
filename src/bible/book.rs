@@ -17,10 +17,13 @@ const ALT_CHPT_NUM_TAG_2: &str = "cp";
 const BOOK_TAG: &str = "book";
 const P_PARA_TAG: &str = "p";
 const Q_PARA_TAG: &str = "q";
-const WORD_TAG: &str = "w";
 const ID_TAG: &str = "id";
-const NEW_LN: &str = "\n";
+// const NEW_LN: &str = "\n";
 const VERSE_TAG: &str = "v";
+//can contain <nd> tags
+const WORD_TAG: &str = "w";
+// this tag can contain <w> or can be contained with <w>
+const NAME_DEITY_TAG: &str = "nd";
 
 pub static BOOK_ORDER: Lazy<HashMap<u32, String>> = Lazy::new(|| {
     let mut map = HashMap::new();
@@ -190,7 +193,7 @@ impl Book {
         Ok(book_struct)
     }
 
-    fn is_content(v: &Node) -> bool {
+    fn is_word_tag_or_text(v: &Node) -> bool {
         v.has_tag_name(WORD_TAG) || v.is_text()
     }
 
@@ -220,6 +223,41 @@ impl Book {
             paragraphs: Vec::new(),
         })
     }
+
+    fn is_nd_tag(child: &Node) -> bool {
+        child.has_tag_name(NAME_DEITY_TAG)
+    }
+
+    fn add_content_to_vs(&mut self, v: &Node, pgh: &mut Paragraph) {
+        //find the most recent verse
+        let verse_opt = pgh.verses.last_mut();
+
+        if let Some(most_recent_verse) = verse_opt {
+            //start adding contents to the verse
+            if let Some(t) = v.text() {
+                most_recent_verse.contents.push_str(&t.replace('\n', " "));
+            }
+        } else {
+            //if we have no recent verse then that means we have a paragraph
+            //starting in the middle of an already existing verse
+            //get the last paragraph created and get its last verse
+            if let Some(c) = self.chapters.last_mut() {
+                if let Some(p) = c.paragraphs.last_mut() {
+                    if let Some(vrs) = p.verses.last_mut() {
+                        let last_vs_num = vrs.number;
+                        let vs_remainder: &str = &v
+                            .text()
+                            .unwrap_or_else(|| {
+                                panic!("there is no text to add to verse {}", last_vs_num)
+                            })
+                            .replace('\n', " ");
+                        vrs.contents += vs_remainder;
+                    }
+                }
+            }
+        }
+    }
+
     fn make_chapters(&mut self, full_book: Node) -> anyhow::Result<()> {
         for child in full_book.children() {
             if Book::is_chapter_tag(&child) {
@@ -232,15 +270,16 @@ impl Book {
             if Book::is_paragraph_tag(&child) {
                 let mut pgh = Paragraph { verses: Vec::new() };
 
-                //making a verse here means the paragraph is 1 verse long and contains all of
-                //the verses for that paragraph under the last verse of the paragraph
+                for (i, v) in child.children().enumerate() {
+                    if i == 0 && !Book::is_verse_tag(&v) {
+                        //its not a vs identifier it is a word
+                        //make a verse and add it to the paragraph with a value of 0 a flag that
+                        //its a partial
+                        let partial_vs = Verse::new(0, "");
+                        pgh.verses.push(partial_vs);
+                    }
 
-                //make a new verse when we come across a verse tag and add it to the paragraph
-                //we append to the paragraph so we always update the last verse in the paragraph
-                //NOTE: where the verse meta data is (vs_num and content)
-                for v in child.children() {
                     //normal situation where a paragraph starts and ends with a verse
-                    //WARN: this will not catch the verses spread across multiple paragraphs
                     if Book::is_verse_tag(&v) {
                         //this is a problem for some books of the bible since some paragraphs start halfway through the verse
                         let mut new_verse = Verse::new(0, "");
@@ -249,49 +288,11 @@ impl Book {
                         pgh.verses.push(new_verse);
                         continue;
                     }
-                    //we need to catch the case where a paragraph starts partway through a verse.
-                    //we have a new paragraph that continues on from the previous verse
-                    //find the last verse and in the previous paragraph and add the
-                    //remaining content to a new paragraph
 
-                    //HACK: the accursed nesting
                     //add the content to the verses we just created
-                    if Book::is_content(&v) {
-                        //find the most recent verse
-                        let verse_opt = pgh.verses.last_mut();
-
-                        if let Some(most_recent_verse) = verse_opt {
-                            //start adding contents to the verse
-                            if let Some(t) = v.text() {
-                                //we don't want to add '\n' after each <w/> tag
-                                if t.contains(NEW_LN) {
-                                    most_recent_verse.contents.push_str(&t.replace('\n', " "));
-                                } else {
-                                    most_recent_verse.contents.push_str(t);
-                                }
-                            }
-                        } else {
-                            //if we have no recent verse then that means we have a paragraph
-                            //starting in the middle of an already existing verse
-                            //get the last paragraph created and get its last verse
-                            if let Some(c) = self.chapters.last_mut() {
-                                if let Some(p) = c.paragraphs.last_mut() {
-                                    if let Some(vrs) = p.verses.last_mut() {
-                                        let last_vs_num = vrs.number;
-                                        let vs_remainder: &str = &v
-                                            .text()
-                                            .unwrap_or_else(|| {
-                                                panic!(
-                                                    "there is no text to add to verse {}",
-                                                    last_vs_num
-                                                )
-                                            })
-                                            .replace('\n', " ");
-                                        vrs.contents += vs_remainder;
-                                    }
-                                }
-                            }
-                        }
+                    if Book::is_word_tag_or_text(&v) {
+                        self.add_content_to_vs(&v, &mut pgh);
+                        continue;
                     }
                 }
 
@@ -336,12 +337,15 @@ mod tests {
 
         for chpt in book_fixture.chapters {
             assert_ne!(chpt.paragraphs.len(), 0);
+
             for para in chpt.paragraphs {
                 for i in 0..para.verses.len() {
                     if i != para.verses.len() - 1 {
-                        let v = &para.verses[i];
-                        let v_next = &para.verses[i + 1];
-                        assert!(v_next.number - v.number == 1);
+                        let current_verse = &para.verses[i];
+                        let next_verse = &para.verses[i + 1];
+                        if current_verse.number != 0 && next_verse.number != 0 {
+                            assert!(next_verse.number - current_verse.number == 1);
+                        }
                     }
                 }
             }
