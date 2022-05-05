@@ -258,26 +258,17 @@ impl Book {
                         //its a partial
                         let partial_vs = Verse::new(0, "");
                         pgh.verses.push(partial_vs);
-                        continue;
-                    }
-
-                    //normal situation where a paragraph starts and ends with a verse
-                    if Book::is_verse_tag(&v) {
-                        //this is a problem for some books of the bible since some paragraphs start halfway through the verse
+                    } else if Book::is_verse_tag(&v) {
+                        //normal situation where a paragraph starts and ends with a verse
                         let mut new_verse = Verse::new(0, "");
                         new_verse.number =
                             v.attribute(ID_TAG).context("no verse ID")?.parse::<u32>()?;
                         pgh.verses.push(new_verse);
-                        continue;
-                    }
-
-                    //add the content to the verses we just created
-                    if Book::is_word_tag_or_text(&v) {
+                    } else if Book::is_word_tag_or_text(&v) {
+                        //add the content to the verses we just created
                         self.add_content_to_vs(&v, &mut pgh);
-                        continue;
-                    }
-
-                    if v.has_tag_name(NAME_DEITY_TAG) {
+                    } else if Book::is_nd_tag(&v) {
+                        // this will handle <nd><w></w></nd> but not the inverse
                         for inner in v.children() {
                             if Book::is_word_tag_or_text(&inner) {
                                 self.add_content_to_vs(&inner, &mut pgh);
