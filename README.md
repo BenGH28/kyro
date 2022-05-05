@@ -62,6 +62,6 @@ kyro today
 - [x] Search for multi-chapter passage
 - [x] Read command
 - [x] Today command
-- [ ] Format output text for easier reading - checkout [ ttf_word_wrap ]( https://docs.rs/ttf_word_wrap/0.5.0/ttf_word_wrap/index.html )
+- [x] Format output text for easier reading
 - [ ] support multiple languages - just English so far but I'd like to add more
 - [ ] Listing Bibles - just NET so far but with more languages there could be more
