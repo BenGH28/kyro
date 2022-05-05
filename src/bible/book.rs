@@ -231,29 +231,10 @@ impl Book {
     fn add_content_to_vs(&mut self, v: &Node, pgh: &mut Paragraph) {
         //find the most recent verse
         let verse_opt = pgh.verses.last_mut();
-
         if let Some(most_recent_verse) = verse_opt {
             //start adding contents to the verse
             if let Some(t) = v.text() {
                 most_recent_verse.contents.push_str(&t.replace('\n', " "));
-            }
-        } else {
-            //if we have no recent verse then that means we have a paragraph
-            //starting in the middle of an already existing verse
-            //get the last paragraph created and get its last verse
-            if let Some(c) = self.chapters.last_mut() {
-                if let Some(p) = c.paragraphs.last_mut() {
-                    if let Some(vrs) = p.verses.last_mut() {
-                        let last_vs_num = vrs.number;
-                        let vs_remainder: &str = &v
-                            .text()
-                            .unwrap_or_else(|| {
-                                panic!("there is no text to add to verse {}", last_vs_num)
-                            })
-                            .replace('\n', " ");
-                        vrs.contents += vs_remainder;
-                    }
-                }
             }
         }
     }
@@ -272,11 +253,12 @@ impl Book {
 
                 for (i, v) in child.children().enumerate() {
                     if i == 0 && !Book::is_verse_tag(&v) {
-                        //its not a vs identifier it is a word
-                        //make a verse and add it to the paragraph with a value of 0 a flag that
+                        //its not a verse it is a word
+                        //make a verse and add it to the paragraph with a value of 0 to indicate
                         //its a partial
                         let partial_vs = Verse::new(0, "");
                         pgh.verses.push(partial_vs);
+                        continue;
                     }
 
                     //normal situation where a paragraph starts and ends with a verse
@@ -293,6 +275,14 @@ impl Book {
                     if Book::is_word_tag_or_text(&v) {
                         self.add_content_to_vs(&v, &mut pgh);
                         continue;
+                    }
+
+                    if v.has_tag_name(NAME_DEITY_TAG) {
+                        for inner in v.children() {
+                            if Book::is_word_tag_or_text(&inner) {
+                                self.add_content_to_vs(&inner, &mut pgh);
+                            }
+                        }
                     }
                 }
 
