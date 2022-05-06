@@ -42,7 +42,8 @@ pub fn get_data_dir() -> Option<PathBuf> {
 ///Download the Bible and save it on your computer
 pub fn download_bible(config: &Config) -> anyhow::Result<()> {
     let url = get_bible_url(config);
-    save_to_pc(&url, config)?;
+    let file_path = save_to_pc(&url, config)?;
+    format_usfx_file(file_path);
     Ok(())
 }
 
@@ -60,8 +61,14 @@ pub fn usfx_file(config: &Config, extension: &str) -> anyhow::Result<String> {
     Ok(fname)
 }
 
+fn format_usfx_file(file_path: PathBuf) -> anyhow::Result<()> {
+    let contents = std::fs::read_to_string(file_path)?;
+    Ok(())
+}
+
 ///Save a Bible in xml to a file on the computer under the XDG format (ie. $HOME/.local/share/kyro/)
-pub fn save_to_pc(url: &str, config: &Config) -> anyhow::Result<()> {
+///returns the path to the Bible xml
+pub fn save_to_pc(url: &str, config: &Config) -> anyhow::Result<PathBuf> {
     //get data_dir: $HOME/.local/share/kyro/
     let data_dir: PathBuf = get_data_dir().context("couldn't determine data dir path")?;
 
@@ -89,7 +96,7 @@ pub fn save_to_pc(url: &str, config: &Config) -> anyhow::Result<()> {
         file.write_all(&bible_zip)?;
         unzip(&file_zip_path, &version_dir).context("unzipping has failed some how")?;
     }
-    Ok(())
+    Ok(file_path)
 }
 
 fn unzip(zipped_file_path: &Path, dest_dir: &Path) -> anyhow::Result<()> {
