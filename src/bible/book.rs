@@ -257,7 +257,13 @@ impl Book {
                         //make a verse and add it to the paragraph with a value of 0 to indicate
                         //its a partial
                         let partial_vs = Verse::new(0, "");
+
+                        //add the partial verse
                         pgh.verses.push(partial_vs);
+                        if Book::is_word_tag_or_text(&v) {
+                            //now add the content of that partial verse
+                            self.add_content_to_vs(&v, &mut pgh);
+                        }
                     } else if Book::is_verse_tag(&v) {
                         //normal situation where a paragraph starts and ends with a verse
                         let mut new_verse = Verse::new(0, "");
