@@ -61,6 +61,7 @@ pub fn usfx_file(config: &Config, extension: &str) -> anyhow::Result<String> {
 }
 
 ///Save a Bible in xml to a file on the computer under the XDG format (ie. $HOME/.local/share/kyro/)
+///returns the path to the Bible xml
 pub fn save_to_pc(url: &str, config: &Config) -> anyhow::Result<()> {
     //get data_dir: $HOME/.local/share/kyro/
     let data_dir: PathBuf = get_data_dir().context("couldn't determine data dir path")?;

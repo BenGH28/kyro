@@ -1,5 +1,5 @@
+use std::fmt;
 use std::fmt::Write as FmtWrite;
-use std::{any::Any, fmt};
 use textwrap::{fill, termwidth, wrap_algorithms::Penalties, Options, WrapAlgorithm};
 
 use crate::bible::verse::Verse;
