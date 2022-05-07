@@ -253,15 +253,10 @@ impl Book {
 
                 for (i, v) in child.children().enumerate() {
                     if i == 0 && !Book::is_verse_tag(&v) {
-                        //its not a verse it is a word
-                        //make a verse and add it to the paragraph with a value of 0 to indicate
-                        //its a partial
+                        //its not a verse it is a word so make partial vs
                         let partial_vs = Verse::new(0, "");
-
-                        //add the partial verse
                         pgh.verses.push(partial_vs);
                         if Book::is_word_tag_or_text(&v) {
-                            //now add the content of that partial verse
                             self.add_content_to_vs(&v, &mut pgh);
                         }
                     } else if Book::is_verse_tag(&v) {
@@ -271,7 +266,6 @@ impl Book {
                             v.attribute(ID_TAG).context("no verse ID")?.parse::<u32>()?;
                         pgh.verses.push(new_verse);
                     } else if Book::is_word_tag_or_text(&v) {
-                        //add the content to the verses we just created
                         self.add_content_to_vs(&v, &mut pgh);
                     } else if Book::is_nd_tag(&v) {
                         // this will handle <nd><w></w></nd> but not the inverse
